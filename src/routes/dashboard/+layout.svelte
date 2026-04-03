@@ -7,12 +7,8 @@
 
 <NavBar name={data.user.name} />
 
-<div class="flex h-screen justify-between gap-8 bg-offWhite px-4 py-20">
-	<div class="w-1/6 bg-blue"></div>
-	<div class="scrollbar-hidden h-full grow overflow-y-scroll">
-		{@render children()}
-	</div>
-	<div class="w-1/6 bg-blue"></div>
+<div class="h-screen w-full justify-between gap-8 bg-offWhite px-4 py-24 pb-20">
+	{@render children()}
 </div>
 
 <PlaybackBar />
