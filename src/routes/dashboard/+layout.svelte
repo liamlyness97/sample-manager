@@ -2,7 +2,9 @@
 	import NavBar from '$lib/components/ui/NavBar.svelte';
 	import PlaybackBar from '$lib/components/ui/PlaybackBar.svelte';
 
-	let { children } = $props();
+	let { children, data } = $props();
+
+	$inspect(data.user);
 </script>
 
 <NavBar />
