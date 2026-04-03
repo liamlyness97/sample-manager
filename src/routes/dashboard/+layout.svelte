@@ -3,11 +3,9 @@
 	import PlaybackBar from '$lib/components/ui/PlaybackBar.svelte';
 
 	let { children, data } = $props();
-
-	$inspect(data.user);
 </script>
 
-<NavBar />
+<NavBar name={data.user.name} />
 
 <div class="flex h-screen justify-between gap-8 bg-offWhite px-4 py-20">
 	<div class="w-1/6 bg-blue"></div>
