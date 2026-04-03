@@ -1,0 +1,15 @@
+Login / Register
+    Dashboard
+    Sample List
+    Sample Pack Recommendations
+    Export Samples
+    Preset List
+    Profile / Daw & VST selections
+    Settings
+    Upload Samples
+
+
+Page Layout Features
+    Sample Playback - Stream audio
+    Nested folder scructure with creation and sample drag drop
+    

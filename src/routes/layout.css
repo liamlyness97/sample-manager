@@ -1,0 +1,12 @@
+@import 'tailwindcss';
+
+@theme {
+	--color-blue: #2b5288;
+	--color-offWhite: #e5e0d9;
+}
+
+@utility scrollbar-hidden {
+	&::-webkit-scrollbar {
+		display: none;
+	}
+}
