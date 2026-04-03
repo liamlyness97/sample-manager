@@ -29,7 +29,7 @@
 		<a href={resolve('/dashboard/samples')}>Samples</a>
 	</div>
 	<div class="flex gap-4">
-		<p>{name}</p>
+		<a href={resolve('/dashboard/profile')}>{name}</a>
 		<form action="/login?/signout" method="POST">
 			<button class="cursor-pointer duration-200 ease-out hover:opacity-75"> Sign Out </button>
 		</form>
