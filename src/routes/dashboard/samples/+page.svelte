@@ -1,12 +1,15 @@
 <script lang="ts">
+	import { invalidateAll } from '$app/navigation';
 	import SampleList from '$lib/components/sample-list/SampleList.svelte';
-
-	let searchTerm = $state('');
-
-	let uploadToggle = $state(false);
-	let fileError = $state('');
+	import { extractPeaks } from '$lib/helpers/extractPeaks.js';
 
 	let { data } = $props();
+
+	let searchTerm = $state('');
+	let uploadToggle = $state(false);
+	let fileError = $state('');
+	let uploading = $state(false);
+	let uploadError = $state('');
 
 	function validateAudioFile(event: Event) {
 		const input = event.currentTarget as HTMLInputElement;
@@ -16,6 +19,30 @@
 			input.value = '';
 		} else {
 			fileError = '';
+		}
+	}
+
+	async function handleUpload(file: File) {
+		uploading = true;
+		uploadError = '';
+		try {
+			const audioCtx = new AudioContext();
+			const audioBuffer = await audioCtx.decodeAudioData(await file.arrayBuffer());
+			const peaks = extractPeaks(audioBuffer, 200);
+
+			const formData = new FormData();
+			formData.append('file', file);
+			formData.append('peaks', JSON.stringify(peaks));
+
+			const res = await fetch('?/upload', { method: 'POST', body: formData });
+			if (!res.ok) throw new Error('Upload failed');
+
+			uploadToggle = false;
+			invalidateAll();
+		} catch (err) {
+			uploadError = 'Something went wrong during upload.';
+		} finally {
+			uploading = false;
 		}
 	}
 </script>
@@ -47,10 +74,21 @@
 		{#if uploadToggle}
 			<div class="flex w-full flex-col gap-4 rounded bg-white p-4">
 				<p class="text-lg">Upload sample</p>
-				<form action="?/upload" method="POST" enctype="multipart/form-data" class="flex gap-4">
+				<form
+					class="flex gap-4"
+					onsubmit={async (e) => {
+						e.preventDefault();
+						const input = e.currentTarget.querySelector('input[type="file"]') as HTMLInputElement;
+						const file = input.files?.[0];
+						if (!file) return;
+						await handleUpload(file);
+					}}
+				>
 					<div class="flex w-full flex-col gap-1">
 						<input
-							class="w-full rounded border px-4 py-2.5 {fileError ? 'border-red-500' : 'border-blue'}"
+							class="w-full rounded border px-4 py-2.5 {fileError
+								? 'border-red-500'
+								: 'border-blue'}"
 							type="file"
 							name="file"
 							id="file"
@@ -64,9 +102,10 @@
 					<button
 						class="w-40 cursor-pointer rounded bg-blue text-white disabled:opacity-50"
 						type="submit"
-						disabled={!!fileError}
-					>Upload sample</button
+						disabled={!!fileError || uploading}
 					>
+						{uploading ? 'Uploading...' : 'Upload sample'}
+					</button>
 				</form>
 			</div>
 		{/if}

@@ -14,6 +14,7 @@
 			folder={sample.sampleFolder}
 			fileSize={sample.fileSize}
 			createdAt={sample.createdAt}
+			peaks={sample.peaks}
 		/>
 	{/each}
 </div>

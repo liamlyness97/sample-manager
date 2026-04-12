@@ -8,6 +8,7 @@ export const samples = sqliteTable('sample', {
     sampleUrl: text('sample_url').notNull(),
     sampleFormat: text('sample_format').notNull(),
     sampleFolder: text('sample_folder').notNull(),
+    peaks: text('peaks'),
     fileSize: integer(),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
         .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)

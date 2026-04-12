@@ -19,26 +19,25 @@ export const actions = {
     upload: async ({ request, locals }) => {
         const data = await request.formData();
         const file = data.get('file') as File;
+        const peaks = data.get('peaks') as string;
 
         const sampleName = file?.name;
-
         const filepath = `uploads/${locals.user!.id}`;
-        const filename = `${filepath}/${crypto.randomUUID()}${extname(file?.name?.replace(/ /g, ''))}`;
+        const filename = `${filepath}/${crypto.randomUUID()}${extname(file.name.replace(/ /g, ''))}`;
 
         mkdirSync(filepath, { recursive: true });
-        await writeFile(filename, Buffer.from(await file?.arrayBuffer()));
+        await writeFile(filename, Buffer.from(await file.arrayBuffer()));
 
         await db.insert(samples).values({
-            sampleName: `${sampleName}`,
-            sampleUrl: `${filename}`,
-            sampleFormat: `${file?.type}`,
-            sampleFolder: `${filepath}`,
-            fileSize: `${file!.size}`,
-            userId: `${locals.user!.id}`
-        })
+            sampleName: sampleName,
+            sampleUrl: filename,
+            sampleFormat: file.type,
+            sampleFolder: filepath,
+            fileSize: `${file.size}`,
+            userId: locals.user!.id,
+            peaks: peaks
+        });
 
-        return {
-            success: true
-        }
+        return { success: true };
     }
 } satisfies Actions
