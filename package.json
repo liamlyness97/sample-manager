@@ -29,6 +29,7 @@
 		"@sveltejs/kit": "^2.50.2",
 		"@sveltejs/vite-plugin-svelte": "^6.2.4",
 		"@tailwindcss/vite": "^4.1.18",
+		"@types/mime-types": "^3.0.1",
 		"@types/node": "^22",
 		"@vitest/browser-playwright": "^4.1.0",
 		"drizzle-kit": "^0.31.8",
@@ -57,6 +58,7 @@
 		]
 	},
 	"dependencies": {
-		"better-auth": "^1.5.6"
+		"better-auth": "^1.5.6",
+		"mime-types": "^3.0.2"
 	}
 }

@@ -48,7 +48,6 @@
 </script>
 
 <div class="flex scrollbar-hidden h-full w-full grow gap-4 overflow-y-scroll">
-	<div class="w-1/6 bg-blue"></div>
 	<div class="flex h-full w-full flex-col gap-8">
 		<div class="flex gap-4">
 			<input

@@ -1,19 +1,32 @@
 <script lang="ts">
+	import { player } from '$lib/stores/player.svelte';
 	import { drawWaveform } from '$lib/helpers/drawWaveform';
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 
-	let { name, id, url, format, folder, fileSize, createdAt, peaks } = $props();
+	let { id, name, url, peaks } = $props();
 
-	let waveForm = $state();
+	let canvas = $state<HTMLCanvasElement>();
+	let isActive = $derived(player.state.activeSampleId === id);
 
-	onMount(() => {
+	onMount(async () => {
+		await tick();
 		const parsedPeaks = typeof peaks === 'string' ? JSON.parse(peaks) : peaks;
-		drawWaveform(waveForm, parsedPeaks);
+		drawWaveform(canvas!, parsedPeaks, 0);
+	});
+
+	$effect(() => {
+		if (!canvas) return;
+		const parsedPeaks = typeof peaks === 'string' ? JSON.parse(peaks) : peaks;
+		const progress = isActive ? player.state.progress : 0;
+		drawWaveform(canvas, parsedPeaks, progress);
 	});
 </script>
 
 <div class="flex w-full snap-proximity snap-start items-center gap-4 rounded bg-white px-4 py-2">
-	<button class="items flex h-12 w-12 justify-center rounded-full bg-blue text-white">
+	<button
+		class="items flex h-12 w-12 justify-center rounded-full bg-blue text-white"
+		onclick={() => player.play(id, `/${url}`)}
+	>
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
 			preserveAspectRatio="xMidYMid meet"
@@ -27,8 +40,14 @@
 	</button>
 	<div class="flex w-full flex-col gap-4">
 		<p class="shrink-0 truncate font-medium">{name}</p>
-		<div class="relative h-6 w-full">
-			<canvas bind:this={waveForm} class="absolute inset-0 h-full w-full"></canvas>
+		<div
+			class="relative h-12 w-full cursor-pointer"
+			onclick={(e) => {
+				const rect = e.currentTarget.getBoundingClientRect();
+				player.seek((e.clientX - rect.left) / rect.width);
+			}}
+		>
+			<canvas bind:this={canvas} class="absolute inset-0 h-full w-full"></canvas>
 		</div>
 	</div>
 </div>
