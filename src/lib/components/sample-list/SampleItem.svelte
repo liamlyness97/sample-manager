@@ -12,9 +12,23 @@
 	});
 </script>
 
-<div class="flex h-16 w-full snap-proximity snap-start items-center gap-4 rounded bg-white px-4">
-	<p class="w-40 shrink-0 truncate text-sm">{name}</p>
-	<div class="relative h-12 w-full">
-		<canvas bind:this={waveForm} class="absolute inset-0 h-full w-full"></canvas>
+<div class="flex w-full snap-proximity snap-start items-center gap-4 rounded bg-white px-4 py-2">
+	<button class="items flex h-12 w-12 justify-center rounded-full bg-blue text-white">
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			preserveAspectRatio="xMidYMid meet"
+			class="h-full w-full object-contain"
+			viewBox="0 0 24 24"
+			><path
+				fill="currentColor"
+				d="M9 15.714V8.287q0-.368.244-.588q.243-.22.568-.22q.102 0 .213.028q.11.027.211.083l5.843 3.733q.186.13.28.298q.093.167.093.379t-.093.379t-.28.298l-5.843 3.733q-.101.055-.213.083t-.213.028q-.326 0-.568-.22T9 15.714"
+			/></svg
+		>
+	</button>
+	<div class="flex w-full flex-col gap-4">
+		<p class="shrink-0 truncate font-medium">{name}</p>
+		<div class="relative h-6 w-full">
+			<canvas bind:this={waveForm} class="absolute inset-0 h-full w-full"></canvas>
+		</div>
 	</div>
 </div>
