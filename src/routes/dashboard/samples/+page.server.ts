@@ -6,12 +6,15 @@ import { db } from "$lib/server/db";
 import { samples } from "$lib/server/db/schema/samples";
 import { user } from "$lib/server/db/schema";
 import { eq } from "drizzle-orm";
+import { sampleType } from "$lib/server/db/schema/sampleType";
 
 export const load: PageServerLoad = async ({ locals }) => {
     const sampleList = await db.select().from(samples).where(eq(samples.userId, locals.user!.id))
+    const sampleTypes = await db.select().from(sampleType).where(eq(sampleType.userId, locals.user!.id))
 
     return {
-        samples: sampleList
+        samples: sampleList,
+        types: sampleTypes
     }
 }
 
@@ -20,6 +23,7 @@ export const actions = {
         const data = await request.formData();
         const file = data.get('file') as File;
         const peaks = data.get('peaks') as string;
+        const sampleType = data.get('sampleType') as string;
 
         const sampleName = file?.name;
         const filepath = `uploads/${locals.user!.id}`;
@@ -35,7 +39,8 @@ export const actions = {
             sampleFolder: filepath,
             fileSize: `${file.size}`,
             userId: locals.user!.id,
-            peaks: peaks
+            peaks: peaks,
+            typeId: sampleType === 'none' ? null : sampleType
         });
 
         return { success: true };

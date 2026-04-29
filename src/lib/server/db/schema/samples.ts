@@ -1,6 +1,7 @@
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 import { user } from "./auth";
 import { sql } from "drizzle-orm";
+import { sampleType } from "./sampleType";
 
 export const samples = sqliteTable('sample', {
     id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -16,5 +17,6 @@ export const samples = sqliteTable('sample', {
     updatedAt: integer("updated_at", { mode: "timestamp_ms" })
         .$onUpdate(() => /* @__PURE__ */ new Date())
         .notNull(),
-    userId: text('user_id').notNull().references(() => user.id)
+    userId: text('user_id').notNull().references(() => user.id),
+    typeId: text('type_id').references(() => sampleType.id)
 })

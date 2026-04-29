@@ -6,7 +6,9 @@
 	let { name }: { name: string } = $props();
 </script>
 
-<nav class="fixed top-0 left-0 flex w-full items-center justify-between bg-blue p-4 text-white">
+<nav
+	class="fixed top-0 left-0 flex w-full items-center justify-between bg-blue-300 px-4 py-2 text-white"
+>
 	<div class="flex items-center gap-4">
 		<div class="h-10 w-10">
 			<svg
@@ -28,10 +30,14 @@
 		<a href={resolve('/dashboard')}>Dashboard</a>
 		<a href={resolve('/dashboard/samples')}>Samples</a>
 	</div>
-	<div class="flex gap-4">
+	<div class="flex items-center gap-4">
 		<a href={resolve('/dashboard/profile')}>{name}</a>
 		<form action="/login?/signout" method="POST">
-			<button class="cursor-pointer duration-200 ease-out hover:opacity-75"> Sign Out </button>
+			<button
+				class="cursor-pointer rounded-md border border-white/75 px-2 py-1.5 text-sm text-white/75 duration-200 ease-out hover:border-white hover:text-white"
+			>
+				Sign Out
+			</button>
 		</form>
 	</div>
 </nav>

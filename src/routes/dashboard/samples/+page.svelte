@@ -10,6 +10,7 @@
 	let fileError = $state('');
 	let uploading = $state(false);
 	let uploadError = $state('');
+	let uploadType = $state('none');
 
 	function validateAudioFile(event: Event) {
 		const input = event.currentTarget as HTMLInputElement;
@@ -33,6 +34,7 @@
 			const formData = new FormData();
 			formData.append('file', file);
 			formData.append('peaks', JSON.stringify(peaks));
+			formData.append('sampleType', uploadType);
 
 			const res = await fetch('?/upload', { method: 'POST', body: formData });
 			if (!res.ok) throw new Error('Upload failed');
@@ -97,6 +99,21 @@
 						{#if fileError}
 							<p class="text-sm text-red-500">{fileError}</p>
 						{/if}
+					</div>
+					<div>
+						<select
+							name="sample-type"
+							id="sample-type"
+							class="h-full rounded border border-blue px-4"
+							bind:value={uploadType}
+						>
+							<option value="none">Select Sample Type</option>
+							{#each data.types as type (type.id)}
+								<option value={type.id}>
+									{type.name}
+								</option>
+							{/each}
+						</select>
 					</div>
 					<button
 						class="w-40 cursor-pointer rounded bg-blue text-white disabled:opacity-50"
