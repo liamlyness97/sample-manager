@@ -1,6 +1,8 @@
-import { pgTable, text, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, pgEnum } from "drizzle-orm/pg-core";
 import { user } from "./auth";
 import { sampleType } from "./sampleType";
+
+export const statusEnum = pgEnum('status', ['pending', 'complete']);
 
 export const samples = pgTable('sample', {
     id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -13,5 +15,6 @@ export const samples = pgTable('sample', {
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
     userId: text('user_id').notNull().references(() => user.id),
-    typeId: text('type_id').references(() => sampleType.id)
+    typeId: text('type_id').references(() => sampleType.id),
+    status: statusEnum('status').notNull().default('pending')
 });

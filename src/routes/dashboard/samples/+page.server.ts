@@ -40,8 +40,10 @@ export const actions = {
             fileSize: `${file.size}`,
             userId: locals.user!.id,
             peaks: peaks,
-            typeId: sampleType === 'none' ? null : sampleType
+            typeId: sampleType === 'none' ? null : sampleType,
+            status: 'pending'
         });
+
 
         return { success: true };
     }

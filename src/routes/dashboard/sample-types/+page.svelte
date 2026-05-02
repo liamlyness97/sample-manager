@@ -1,43 +1,41 @@
 <script lang="ts">
 	import { slide } from 'svelte/transition';
 
-	let { data } = $props();
+	let { data, form } = $props();
 
 	let addType = $state(false);
 </script>
 
-<div class="flex w-full flex-col gap-4 pr-8">
-	<div class="flex w-full justify-between">
-		<h2 class="text-3xl font-medium">Sample Types</h2>
-		<button
-			onclick={() => (addType = !addType)}
-			class="cursor-pointer rounded border border-blue px-4 duration-200 hover:bg-blue hover:text-white"
-		>
-			{#if addType}
-				Close
-			{:else}
-				Add Type
-			{/if}
-		</button>
-	</div>
-	{#if addType}
-		<div
-			transition:slide={{ duration: 200 }}
-			class="flex w-full flex-col gap-2 rounded bg-white p-4"
-		>
-			<p class="text-xl font-medium">Add Type</p>
-			<form action="?/addType" method="POST" class="flex gap-4">
-				<input
-					type="text"
-					name="name"
-					id="name"
-					class="w-full rounded border border-blue p-2"
-					placeholder="Enter Sample Type Name"
-				/>
-				<button type="submit" class="shrink-0 rounded bg-blue px-4 text-white"> Add Type </button>
-			</form>
+<div class="flex w-full flex-col gap-4">
+	<div class="flex w-full flex-col gap-2">
+		<h2 class="text-4xl font-light text-white">Sample Types</h2>
+		<div class="mt-2 flex justify-between text-white/50">
+			<p>9 types | drag any sample onto a type to tag it</p>
 		</div>
-	{/if}
+	</div>
+
+	<div
+		transition:slide={{ duration: 200 }}
+		class="flex w-full flex-col gap-2 rounded-md bg-blue-300 p-6"
+	>
+		<p class="text-xl font-light text-white">Add Type</p>
+		{#if form?.missing}
+			<p class="text-red-500">You must enter a name for the sample type</p>
+		{/if}
+		<form action="?/addType" method="POST" class="flex gap-4">
+			<input
+				type="text"
+				name="name"
+				id="name"
+				class="border-blue w-full rounded-md border bg-blue-200 px-3 py-2 placeholder:text-white/50"
+				placeholder="Enter Sample Type Name"
+			/>
+			<button type="submit" class="shrink-0 rounded bg-orange-600 px-4 text-white">
+				Add Type
+			</button>
+		</form>
+	</div>
+
 	<div class="grid grid-cols-5 gap-4 py-8">
 		{#if data.sampleTypes}
 			{#each data.sampleTypes as type (type.id)}

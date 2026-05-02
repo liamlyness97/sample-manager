@@ -49,28 +49,24 @@
 	}
 </script>
 
-<div class="flex scrollbar-hidden h-full w-full grow gap-4 overflow-y-scroll px-8">
-	<div class="flex h-full w-full flex-col gap-8">
-		<div class="flex gap-4">
-			<input
-				class="border-blue w-full rounded border px-4 py-2.5"
-				type="text"
-				name="searchTerm"
-				bind:value={searchTerm}
-				placeholder="Search samples..."
-			/>
-			<button
-				onclick={() => {
-					uploadToggle = !uploadToggle;
-				}}
-				class="bg-blue w-28 cursor-pointer rounded text-white"
-			>
-				{#if uploadToggle}
-					Close
-				{:else}
-					Upload
-				{/if}
-			</button>
+<div class="flex scrollbar-hidden h-full w-full grow flex-col gap-4 overflow-y-scroll">
+	<div class="flex w-full flex-col gap-2">
+		<h2 class="text-4xl font-light text-white">Browse</h2>
+		<div class="mt-2 flex justify-between text-white/50">
+			<p>12 of 12 | sorted by recently added</p>
+			<div class="flex gap-2">
+				<button
+					class="rounded-md bg-orange-600 px-6 py-2 text-white"
+					onclick={() => {
+						uploadToggle = !uploadToggle;
+					}}
+					>{#if uploadToggle}
+						Close
+					{:else}
+						Upload
+					{/if}</button
+				>
+			</div>
 		</div>
 		{#if uploadToggle}
 			<div class="flex w-full flex-col gap-4 rounded bg-white p-4">
@@ -125,6 +121,18 @@
 				</form>
 			</div>
 		{/if}
+	</div>
+	<div class="flex h-full w-full flex-col gap-8">
+		<div class="flex gap-4">
+			<input
+				class="border-blue w-full rounded border px-4 py-2.5"
+				type="text"
+				name="searchTerm"
+				bind:value={searchTerm}
+				placeholder="Search samples..."
+			/>
+		</div>
+
 		<SampleList samples={data.samples} />
 	</div>
 </div>

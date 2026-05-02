@@ -2,6 +2,7 @@ import { db } from "$lib/server/db";
 import { sampleType } from "$lib/server/db/schema/sampleType";
 import { eq } from "drizzle-orm";
 import type { Actions, PageServerLoad } from "./$types";
+import { fail } from "@sveltejs/kit";
 
 export const load: PageServerLoad = async ({ locals }) => {
     const sampleTypes = await db.select().from(sampleType).where(eq(sampleType.userId, locals.user!.id))
@@ -15,6 +16,10 @@ export const actions = {
     addType: async ({ request, locals }) => {
         const data = await request.formData();
         const name = data.get('name') as string;
+
+        if (!name) {
+            return fail(400, { name, missing: true })
+        }
 
         await db.insert(sampleType).values({
             name: name,

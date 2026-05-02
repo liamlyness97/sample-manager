@@ -72,7 +72,7 @@
 			<span>Sample Types</span>
 		</a>
 	</div>
-	<div class="h-full w-full py-20">
+	<div class="h-full w-full py-20 pr-8">
 		{@render children()}
 	</div>
 </div>
