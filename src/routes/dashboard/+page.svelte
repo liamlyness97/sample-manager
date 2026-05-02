@@ -1,4 +1,4 @@
-<div class="flex w-full flex-col px-8 py-24">
+<div class="flex w-full flex-col px-8">
 	<h2 class="text-4xl font-light text-white">Browse</h2>
 	<div class="mt-2 flex justify-between">
 		<p>Stats</p>

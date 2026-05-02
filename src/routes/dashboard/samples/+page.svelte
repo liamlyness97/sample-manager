@@ -49,11 +49,11 @@
 	}
 </script>
 
-<div class="flex scrollbar-hidden h-full w-full grow gap-4 overflow-y-scroll">
+<div class="flex scrollbar-hidden h-full w-full grow gap-4 overflow-y-scroll px-8">
 	<div class="flex h-full w-full flex-col gap-8">
 		<div class="flex gap-4">
 			<input
-				class="w-full rounded border border-blue px-4 py-2.5"
+				class="border-blue w-full rounded border px-4 py-2.5"
 				type="text"
 				name="searchTerm"
 				bind:value={searchTerm}
@@ -63,7 +63,7 @@
 				onclick={() => {
 					uploadToggle = !uploadToggle;
 				}}
-				class="w-28 cursor-pointer rounded bg-blue text-white"
+				class="bg-blue w-28 cursor-pointer rounded text-white"
 			>
 				{#if uploadToggle}
 					Close
@@ -104,7 +104,7 @@
 						<select
 							name="sample-type"
 							id="sample-type"
-							class="h-full rounded border border-blue px-4"
+							class="border-blue h-full rounded border px-4"
 							bind:value={uploadType}
 						>
 							<option value="none">Select Sample Type</option>
@@ -116,7 +116,7 @@
 						</select>
 					</div>
 					<button
-						class="w-40 cursor-pointer rounded bg-blue text-white disabled:opacity-50"
+						class="bg-blue w-40 cursor-pointer rounded text-white disabled:opacity-50"
 						type="submit"
 						disabled={!!fileError || uploading}
 					>
@@ -127,5 +127,4 @@
 		{/if}
 		<SampleList samples={data.samples} />
 	</div>
-	<div class="w-1/6 bg-blue"></div>
 </div>

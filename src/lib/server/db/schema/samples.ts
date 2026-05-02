@@ -1,9 +1,8 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { pgTable, text, timestamp, integer } from "drizzle-orm/pg-core";
 import { user } from "./auth";
-import { sql } from "drizzle-orm";
 import { sampleType } from "./sampleType";
 
-export const samples = sqliteTable('sample', {
+export const samples = pgTable('sample', {
     id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
     sampleName: text('sample_name').notNull(),
     sampleUrl: text('sample_url').notNull(),
@@ -11,12 +10,8 @@ export const samples = sqliteTable('sample', {
     sampleFolder: text('sample_folder').notNull(),
     peaks: text('peaks'),
     fileSize: integer(),
-    createdAt: integer("created_at", { mode: "timestamp_ms" })
-        .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-        .notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-        .$onUpdate(() => /* @__PURE__ */ new Date())
-        .notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
     userId: text('user_id').notNull().references(() => user.id),
     typeId: text('type_id').references(() => sampleType.id)
-})
+});

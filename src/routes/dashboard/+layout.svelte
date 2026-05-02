@@ -72,7 +72,9 @@
 			<span>Sample Types</span>
 		</a>
 	</div>
-	{@render children()}
+	<div class="h-full w-full py-20">
+		{@render children()}
+	</div>
 </div>
 
 <PlaybackBar />
