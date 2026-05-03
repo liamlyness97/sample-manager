@@ -53,7 +53,7 @@
 	<div class="flex w-full flex-col gap-2">
 		<h2 class="text-4xl font-light text-white">Browse</h2>
 		<div class="mt-2 flex justify-between text-white/50">
-			<p>12 of 12 | sorted by recently added</p>
+			<p>{data.sampleCount} of {data.sampleCount} | sorted by recently added</p>
 			<div class="flex gap-2">
 				<button
 					class="rounded-md bg-orange-600 px-6 py-2 text-white"
