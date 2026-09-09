@@ -26,4 +26,6 @@ services:
       - uploads:/app/uploads
     ports:
       - '8000:8000'
+    environment:
+      UPLOAD_DIR: /app/uploads
     command: uvicorn fastapi_server.main:app --host 0.0.0.0 --reload

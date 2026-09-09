@@ -23,6 +23,10 @@
 		}
 	}
 
+	function toggleUpload() {
+		uploadToggle = !uploadToggle;
+	}
+
 	async function handleUpload(file: File) {
 		uploading = true;
 		uploadError = '';
@@ -50,37 +54,27 @@
 </script>
 
 <div class="flex scrollbar-hidden h-full w-full grow flex-col gap-4 overflow-y-scroll">
-	<div class="flex w-full flex-col gap-2">
-		<h2 class="text-4xl font-light text-white">Browse</h2>
-		<div class="mt-2 flex justify-between text-white/50">
-			<p>{data.sampleCount} of {data.sampleCount} | sorted by recently added</p>
-			<div class="flex gap-2">
-				<button
-					class="rounded-md bg-orange-600 px-6 py-2 text-white"
-					onclick={() => {
-						uploadToggle = !uploadToggle;
-					}}
-					>{#if uploadToggle}
-						Close
-					{:else}
-						Upload
-					{/if}</button
-				>
-			</div>
-		</div>
-		{#if uploadToggle}
-			<div class="flex w-full flex-col gap-4 rounded bg-white p-4">
-				<p class="text-lg">Upload sample</p>
-				<form
-					class="flex gap-4"
-					onsubmit={async (e) => {
-						e.preventDefault();
-						const input = e.currentTarget.querySelector('input[type="file"]') as HTMLInputElement;
-						const file = input.files?.[0];
-						if (!file) return;
-						await handleUpload(file);
-					}}
-				>
+	{#if uploadToggle}
+		<div class="fixed top-0 left-0 z-100 flex h-screen w-full items-center justify-center">
+			<div
+				class="absolute top-0 left-0 z-110 h-screen w-full bg-blue-300/20 backdrop-blur-sm"
+				onclick={toggleUpload}
+			></div>
+			<form
+				class="relative z-120 flex w-200 flex-col rounded-2xl bg-white"
+				onsubmit={async (e) => {
+					e.preventDefault();
+					const input = e.currentTarget.querySelector('input[type="file"]') as HTMLInputElement;
+					const file = input.files?.[0];
+					if (!file) return;
+					await handleUpload(file);
+				}}
+			>
+				<div class="flex justify-between px-8 py-6">
+					<p>Upload samples</p>
+					<button onclick={toggleUpload} class="cursor-pointer text-2xl font-light"> x </button>
+				</div>
+				<div class="flex items-center justify-center border-y px-8 py-6">
 					<div class="flex w-full flex-col gap-1">
 						<input
 							class="w-full rounded border px-4 py-2.5 {fileError
@@ -111,26 +105,57 @@
 							{/each}
 						</select>
 					</div>
-					<button
-						class="bg-blue w-40 cursor-pointer rounded text-white disabled:opacity-50"
-						type="submit"
-						disabled={!!fileError || uploading}
-					>
-						{uploading ? 'Uploading...' : 'Upload sample'}
-					</button>
-				</form>
+				</div>
+				<div class="flex justify-between px-8 py-6">
+					<div class="">Stats</div>
+					<div class="flex gap-2">
+						<button onclick={toggleUpload}> Cancel </button>
+						<button
+							class="w-40 cursor-pointer rounded bg-blue-100 text-white disabled:opacity-50"
+							type="submit"
+							disabled={!!fileError || uploading}
+						>
+							{uploading ? 'Uploading...' : 'Upload sample'}
+						</button>
+					</div>
+				</div>
+			</form>
+		</div>
+	{/if}
+	<div class="flex w-full flex-col gap-2">
+		<h2 class="text-4xl font-light text-white">Browse</h2>
+		<div class="mt-2 flex justify-between text-white/50">
+			<p>{data.sampleCount} of {data.sampleCount} | sorted by recently added</p>
+			<div class="flex gap-2">
+				<button
+					class="rounded-md bg-orange-600 px-6 py-2 text-white"
+					onclick={() => {
+						uploadToggle = !uploadToggle;
+					}}
+					>{#if uploadToggle}
+						Close
+					{:else}
+						Upload
+					{/if}</button
+				>
 			</div>
-		{/if}
+		</div>
 	</div>
 	<div class="flex h-full w-full flex-col gap-8">
-		<div class="flex gap-4">
-			<input
-				class="border-blue w-full rounded border px-4 py-2.5"
-				type="text"
-				name="searchTerm"
-				bind:value={searchTerm}
-				placeholder="Search samples..."
-			/>
+		<div class="flex items-center gap-4">
+			<div class="w-1/3">
+				<input
+					class="w-full rounded border border-white/20 px-4 py-2.5 placeholder:text-white"
+					type="text"
+					name="searchTerm"
+					bind:value={searchTerm}
+					placeholder="Search samples..."
+				/>
+			</div>
+			<div class="flex gap-2">
+				<button class="rounded-xl border border-white/20 px-4 py-2 text-white/50"> All </button>
+				<button class="rounded-xl border border-white/20 px-4 py-2 text-white/50"> Kicks </button>
+			</div>
 		</div>
 
 		<SampleList samples={data.samples} />

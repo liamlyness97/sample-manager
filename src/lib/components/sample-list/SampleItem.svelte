@@ -24,7 +24,7 @@
 
 <div class="flex w-full snap-proximity snap-start items-center gap-4 rounded bg-white px-4 py-2">
 	<button
-		class="items flex h-12 w-12 justify-center rounded-full bg-blue text-white"
+		class="items rounded-ful flex h-12 w-12 justify-center bg-blue-300 text-white"
 		onclick={() => player.play(id, `/${url}`)}
 	>
 		<svg
