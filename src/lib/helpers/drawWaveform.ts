@@ -22,8 +22,8 @@ export function drawWaveform(canvas: HTMLCanvasElement, peaks: number[], progres
     }
 
     const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const colourPlayed = '#378ADD';
-    const colourUnplayed = isDark ? '#444441' : '#D3D1C7';
+    const colourPlayed = '#fbab29';
+    const colourUnplayed = isDark ? '#1d324f' : '#1d324f';
 
     const barWidth = Math.max(2, (w / displayPeaks.length) - 1);
     const gap = Math.min(1.5, barWidth * 0.3);

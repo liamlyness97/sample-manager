@@ -1,116 +1,193 @@
-type PlayerState = {
-    activeSampleId: string | null;
-    isPlaying: boolean;
-    progress: number;
-    currentTime: number;
-    duration: number;
-}
+export type Sample = {
+	id: string;
+	sampleName: string;
+	sampleUrl: string;
+	peaks: string | null;
+	bpm?: number | null;
+};
 
-let state = $state<PlayerState>({
-    activeSampleId: null,
-    isPlaying: false,
-    progress: 0,
-    currentTime: 0,
-    duration: 0
+type PlayerState = {
+	activeSample: Sample | null;
+	isPlaying: boolean;
+	progress: number;
+	currentTime: number;
+	duration: number;
+	volume: number;
+};
+
+const state = $state<PlayerState>({
+	activeSample: null,
+	isPlaying: false,
+	progress: 0,
+	currentTime: 0,
+	duration: 0,
+	volume: 1
 });
 
+let queue = $state<Sample[]>([]);
+
 let audioCtx: AudioContext | null = null;
+let gainNode: GainNode | null = null;
 let sourceNode: AudioBufferSourceNode | null = null;
 let audioBuffer: AudioBuffer | null = null;
 let startTime = 0;
 let startOffset = 0;
-let rafId: number;
+let rafId = 0;
+// Bumped on every load() so a slow fetch/decode that resolves after the
+// user has already picked another sample can bail out instead of playing.
+let loadToken = 0;
 
 function getAudioCtx() {
-    if (!audioCtx) audioCtx = new AudioContext();
-    return audioCtx
+	if (!audioCtx) {
+		audioCtx = new AudioContext();
+		gainNode = audioCtx.createGain();
+		gainNode.gain.value = state.volume;
+		gainNode.connect(audioCtx.destination);
+	}
+	return audioCtx;
 }
 
-function stop() {
-    if (sourceNode) {
-        sourceNode.onended = null;
-        try { sourceNode.stop(); } catch (e) {
-            console.error(e)
-        }
-        sourceNode = null;
-    }
-    cancelAnimationFrame(rafId);
-    state.isPlaying = false;
+function teardownSource() {
+	if (sourceNode) {
+		sourceNode.onended = null;
+		try {
+			sourceNode.stop();
+		} catch (e) {
+			console.error(e);
+		}
+		sourceNode.disconnect();
+		sourceNode = null;
+	}
+	cancelAnimationFrame(rafId);
 }
 
 function tick() {
-    if (!audioBuffer || !state.isPlaying) return;
-    const elapsed = getAudioCtx().currentTime - startTime + startOffset;
-    state.currentTime = elapsed;
-    state.progress = Math.min(elapsed / audioBuffer.duration, 1);
-    rafId = requestAnimationFrame(tick);
+	if (!audioBuffer || !state.isPlaying) return;
+	const elapsed = getAudioCtx().currentTime - startTime + startOffset;
+	if (elapsed >= audioBuffer.duration) {
+		state.currentTime = audioBuffer.duration;
+		state.progress = 1;
+		return;
+	}
+	state.currentTime = elapsed;
+	state.progress = elapsed / audioBuffer.duration;
+	rafId = requestAnimationFrame(tick);
 }
 
-async function play(sampleId: string, url: string) {
-    stop();
+function startPlayback(offset: number) {
+	const ctx = getAudioCtx();
+	teardownSource();
 
-    // If tapping the already active sample, just stop
-    if (state.activeSampleId === sampleId && state.progress > 0) {
-        state.activeSampleId = null;
-        startOffset = 0;
-        state.progress = 0;
-        return
-    }
+	sourceNode = ctx.createBufferSource();
+	sourceNode.buffer = audioBuffer;
+	sourceNode.connect(gainNode!);
+	sourceNode.start(0, offset);
 
-    state.activeSampleId = sampleId;
-    startOffset = 0;
+	startTime = ctx.currentTime;
+	startOffset = offset;
+	state.isPlaying = true;
 
-    const ctx = getAudioCtx();
-    if (ctx.state === 'suspended') await ctx.resume();
+	sourceNode.onended = () => {
+		// Only reached on natural end — teardownSource() nulls this handler first.
+		state.isPlaying = false;
+		state.progress = 0;
+		state.currentTime = 0;
+		startOffset = 0;
+	};
 
-    const res = await fetch(url);
-    audioBuffer = await ctx.decodeAudioData(await res.arrayBuffer());
-    state.duration = audioBuffer.duration;
+	tick();
+}
 
-    sourceNode = ctx.createBufferSource();
-    sourceNode.buffer = audioBuffer
-    sourceNode.connect(ctx.destination);
-    sourceNode.start(0, startOffset);
-    startTime = ctx.currentTime;
-    state.isPlaying = true;
+/** Keep the store aware of the list the user is browsing so prev/next can walk it. */
+function setQueue(samples: Sample[]) {
+	queue = samples;
+}
 
-    sourceNode.onended = () => {
-        if (state.isPlaying) {
-            state.isPlaying = false;
-            state.progress = 0;
-            state.currentTime = 0;
-            state.activeSampleId = null;
-        }
-    };
+/**
+ * Load a sample into the playback bar and start playing it. Clicking the sample
+ * that is already active toggles play/pause instead of reloading.
+ */
+async function load(sample: Sample) {
+	if (state.activeSample?.id === sample.id) {
+		togglePlay();
+		return;
+	}
 
-    tick();
+	teardownSource();
+	state.isPlaying = false;
+	state.activeSample = sample;
+	state.progress = 0;
+	state.currentTime = 0;
+	state.duration = 0;
+	startOffset = 0;
+	audioBuffer = null;
+
+	const token = ++loadToken;
+	const ctx = getAudioCtx();
+	if (ctx.state === 'suspended') await ctx.resume();
+
+	const res = await fetch(`/${sample.sampleUrl}`);
+	const decoded = await ctx.decodeAudioData(await res.arrayBuffer());
+	if (token !== loadToken) return; // a newer load() has taken over
+
+	audioBuffer = decoded;
+	state.duration = decoded.duration;
+	startPlayback(0);
+}
+
+function togglePlay() {
+	if (!audioBuffer || !state.activeSample) return;
+
+	if (state.isPlaying) {
+		const elapsed = getAudioCtx().currentTime - startTime + startOffset;
+		teardownSource();
+		startOffset = Math.min(elapsed, audioBuffer.duration);
+		state.isPlaying = false;
+	} else {
+		startPlayback(startOffset >= audioBuffer.duration ? 0 : startOffset);
+	}
 }
 
 function seek(progress: number) {
-    if (!audioBuffer) return;
-    startOffset = progress * audioBuffer.duration;
-    if (state.isPlaying) {
-        stop();
-        sourceNode = getAudioCtx().createBufferSource();
-        sourceNode.buffer = audioBuffer;
-        sourceNode.connect(getAudioCtx().destination);
-        sourceNode.start(0, startOffset);
-        startTime = getAudioCtx().currentTime;
-        state.isPlaying = true;
-        sourceNode.onended = () => {
-            state.isPlaying = false;
-            state.progress = 0;
-            state.activeSampleId = null;
-        };
-        tick();
-    } else {
-        state.progress = progress;
-    }
+	if (!audioBuffer) return;
+	const clamped = Math.min(Math.max(progress, 0), 1);
+	const offset = clamped * audioBuffer.duration;
+
+	state.progress = clamped;
+	state.currentTime = offset;
+
+	if (state.isPlaying) {
+		startPlayback(offset);
+	} else {
+		startOffset = offset;
+	}
+}
+
+function setVolume(volume: number) {
+	state.volume = Math.min(Math.max(volume, 0), 1);
+	if (gainNode) gainNode.gain.value = state.volume;
+}
+
+function step(delta: number) {
+	if (!state.activeSample || queue.length === 0) return;
+	const index = queue.findIndex((s) => s.id === state.activeSample!.id);
+	if (index === -1) return;
+	const next = queue[index + delta];
+	if (next) load(next);
 }
 
 export const player = {
-    get state() { return state; },
-    play,
-    stop,
-    seek
+	get state() {
+		return state;
+	},
+	get queue() {
+		return queue;
+	},
+	setQueue,
+	load,
+	togglePlay,
+	seek,
+	setVolume,
+	next: () => step(1),
+	prev: () => step(-1)
 };
