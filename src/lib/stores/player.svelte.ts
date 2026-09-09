@@ -4,6 +4,7 @@ export type Sample = {
 	sampleUrl: string;
 	peaks: string | null;
 	bpm?: number | null;
+	typeId?: string | null;
 };
 
 type PlayerState = {
