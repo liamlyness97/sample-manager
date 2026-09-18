@@ -7,7 +7,7 @@
 </script>
 
 <nav
-	class="fixed top-0 left-0 flex w-full items-center justify-between bg-blue-300 px-4 py-2 text-white"
+	class="fixed top-0 left-0 flex w-full items-center justify-between border-b border-blue-100/70 bg-blue-300 px-4 py-2 text-white"
 >
 	<div class="flex items-center gap-4">
 		<div class="h-10 w-10">
@@ -26,10 +26,7 @@
 		</div>
 		<p>{title}</p>
 	</div>
-	<div class="flex gap-8">
-		<a href={resolve('/dashboard')}>Dashboard</a>
-		<a href={resolve('/dashboard/samples')}>Samples</a>
-	</div>
+
 	<div class="flex items-center gap-4">
 		<a href={resolve('/dashboard/profile')}>{name}</a>
 		<form action="/login?/signout" method="POST">

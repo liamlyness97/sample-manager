@@ -1,13 +1,13 @@
 FROM node:22-alpine AS builder
 WORKDIR /app
 RUN corepack enable pnpm
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 COPY . .
 ARG BETTER_AUTH_SECRET
-ARG DATABASE_URL
+ARG POSTGRES_URL
 ENV BETTER_AUTH_SECRET=$BETTER_AUTH_SECRET
-ENV DATABASE_URL=$DATABASE_URL
+ENV POSTGRES_URL=$POSTGRES_URL
 RUN pnpm build
 
 FROM node:22-alpine

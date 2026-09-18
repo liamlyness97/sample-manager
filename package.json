@@ -5,6 +5,8 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
+		"dev:services": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up fastapi postgres --build -d",
+		"dev:services:down": "docker compose -f docker-compose.yml -f docker-compose.dev.yml down",
 		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
@@ -51,11 +53,6 @@
 		"vite-plugin-devtools-json": "^1.0.0",
 		"vitest": "^4.1.0",
 		"vitest-browser-svelte": "^2.0.2"
-	},
-	"pnpm": {
-		"onlyBuiltDependencies": [
-			"esbuild"
-		]
 	},
 	"dependencies": {
 		"@sveltejs/adapter-node": "^5.5.4",

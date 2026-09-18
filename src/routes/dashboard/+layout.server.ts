@@ -12,6 +12,8 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 
     const sampleList = await db.select().from(samples).where(eq(samples.userId, locals.user!.id))
 
+    
+
     const sampleTypes = await db.select().from(sampleType).where(eq(sampleType.userId, locals.user!.id))
 
     return { user: locals.user, session: locals.session, sampleCount: sampleList.length };

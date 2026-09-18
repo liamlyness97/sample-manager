@@ -7,6 +7,8 @@ import { samples } from "$lib/server/db/schema/samples";
 import { user } from "$lib/server/db/schema";
 import { eq } from "drizzle-orm";
 import { sampleType } from "$lib/server/db/schema/sampleType";
+import { env } from "$env/dynamic/private"
+
 
 export const load: PageServerLoad = async ({ locals }) => {
     const sampleList = await db.select().from(samples).where(eq(samples.userId, locals.user!.id))
@@ -31,6 +33,11 @@ export const actions = {
 
         mkdirSync(filepath, { recursive: true });
         await writeFile(filename, Buffer.from(await file.arrayBuffer()));
+
+        // Testing the pass off to FastAPI
+        const fastApiTest = await fetch(`${env.FASTAPI_URL}/files/test`);
+        const fastApiRes = await fastApiTest.json()
+        console.log(fastApiRes)
 
         await db.insert(samples).values({
             sampleName: sampleName,
