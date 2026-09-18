@@ -12,14 +12,13 @@ export const POST: RequestHandler = async ({ request }) => {
     const librosa = await fetch(`${env.FASTAPI_URL}/files/analyse/${sample.userId}/${filename}`)
     const librosaRes = await librosa.json()
 
-    console.log(librosaRes)
-
     const [sampleUpdate] = await db.update(samples)
         .set({ 
             sampleBpm: librosaRes.bpm,
             sampleRate: librosaRes.sampleRate,
             duration: librosaRes.duration,
-            estimatedKey: librosaRes.key
+            estimatedKey: librosaRes.key,
+            status: 'complete'
         })
         .where(eq(samples.id, sample.id))
         .returning()
