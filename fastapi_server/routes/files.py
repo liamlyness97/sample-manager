@@ -4,6 +4,7 @@ import librosa
 import numpy as np
 from pathlib import Path
 from fastapi import APIRouter, UploadFile
+from fastapi_server.audio.key_detection import estimate_key
 
 UPLOAD_DIR = Path(os.environ.get("UPLOAD_DIR", "../uploads"))
 
@@ -24,6 +25,21 @@ async def upload(file: UploadFile):
         "sample_rate": sr,
         "duration": duration,  
         "status": 200
+    }
+
+@router.get("/analyse/{user_id}/{filename}")
+async def analyse_audio(user_id: str, filename: str):
+    y, sr = librosa.load(UPLOAD_DIR / user_id / filename)
+    tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
+
+    duration = librosa.get_duration(y=y, sr=sr)
+    key = estimate_key(y, sr)
+
+    return {
+        "bpm": float(np.atleast_1d(tempo)[0]),
+        "duration": float(duration),
+        "sampleRate": int(sr),
+        "key": key
     }
 
 @router.get("/test")
