@@ -1,4 +1,4 @@
-import { json } from "@sveltejs/kit";
+import { error, json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import { env } from "$env/dynamic/private";
 import { db } from "$lib/server/db";
@@ -10,6 +10,9 @@ export const POST: RequestHandler = async ({ request }) => {
 
     
     const librosa = await fetch(`${env.FASTAPI_URL}/files/analyse/${sample.userId}/${filename}`)
+    
+    if (!librosa.ok) error(librosa.status);
+    
     const librosaRes = await librosa.json()
 
     const [sampleUpdate] = await db.update(samples)
