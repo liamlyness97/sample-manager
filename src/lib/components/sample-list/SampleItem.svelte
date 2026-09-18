@@ -53,7 +53,7 @@
 		</button>
 	</div>
 
-	<div class="col-span-4 flex min-w-0 flex-col gap-1">
+	<div class="col-span-3 flex min-w-0 flex-col gap-1">
 		<p class="truncate text-sm font-medium">{sample.sampleName}</p>
 		<div class="h-10 w-full">
 			<Waveform
@@ -63,9 +63,17 @@
 			/>
 		</div>
 	</div>
-
-	<p class="text-sm text-white/70">{sample.bpm ?? '—'}</p>
+	<div>
+		<p class="text-center text-sm text-white/70">{sample.sampleBpm ?? '—'}</p>
+	</div>
 	<!-- Length: no duration is stored on the sample record yet -->
-	<p class="text-sm text-white/70">—</p>
-	<p class="truncate text-sm text-white/70">{typeName}</p>
+	<div>
+		<p class="text-center text-sm text-white/70">{sample.duration ?? '—'}</p>
+	</div>
+	<div>
+		<p class="text-center text-sm text-white/70">{sample.estimatedKey ?? '—'}</p>
+	</div>
+	<div>
+		<p class="truncate text-center text-sm text-white/70">{typeName}</p>
+	</div>
 </div>

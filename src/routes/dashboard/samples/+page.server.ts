@@ -20,7 +20,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 }
 
 export const actions = {
-    upload: async ({ request, locals }) => {
+    upload: async ({ request, locals, fetch }) => {
         const data = await request.formData();
         const file = data.get('file') as File;
         const peaks = data.get('peaks') as string;
@@ -36,7 +36,7 @@ export const actions = {
 
        
 
-        await db.insert(samples).values({
+        const [newSample] = await db.insert(samples).values({
             sampleName: sampleName,
             sampleUrl: filename,
             sampleFormat: file.type,
@@ -46,12 +46,20 @@ export const actions = {
             peaks: peaks,
             typeId: sampleType === 'none' ? null : sampleType,
             status: 'pending'
-        });
+        }).returning({ id: samples.id, userId: samples.userId, });
 
-         // Testing the pass off to FastAPI
+        // Testing the pass off to FastAPI
+        /*
         const fastApiTest = await fetch(`${env.FASTAPI_URL}/files/test/${locals.user!.id}/${uploadFileName}`);
         const fastApiRes = await fastApiTest.json()
         console.log(fastApiRes)
+        */
+
+        const analysis = await fetch('/api/analysis', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({sample: newSample, filename: uploadFileName})
+        })
 
         return { success: true };
     }

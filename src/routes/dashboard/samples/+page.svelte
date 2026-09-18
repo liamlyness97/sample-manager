@@ -9,7 +9,7 @@
 	let uploadOpen = $state(false);
 </script>
 
-<div class="flex scrollbar-hidden h-full w-full grow flex-col gap-4 overflow-y-scroll">
+<div class="flex h-full w-full grow flex-col gap-4 overflow-hidden">
 	<div class="flex w-full flex-col gap-2">
 		<h2 class="text-4xl font-light text-white">Browse</h2>
 		<div class="mt-2 flex justify-between text-white/50">
@@ -24,7 +24,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="flex h-full w-full flex-col gap-8">
+	<div class="flex h-full min-h-0 w-full flex-col gap-8">
 		<div class="flex items-center gap-4">
 			<div class="w-1/3">
 				<input

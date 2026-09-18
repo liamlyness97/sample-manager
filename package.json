@@ -5,6 +5,8 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
+		"dev:services:build": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up fastapi postgres --build",
+		"dev:services:up": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up fastapi postgres",
 		"dev:services": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up fastapi postgres --build -d",
 		"dev:services:down": "docker compose -f docker-compose.yml -f docker-compose.dev.yml down",
 		"build": "vite build",

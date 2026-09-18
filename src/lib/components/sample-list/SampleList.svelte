@@ -32,7 +32,7 @@
 	});
 </script>
 
-<div class="w-full overflow-hidden rounded-xl border border-blue-100">
+<div class="flex h-full min-h-0 w-full flex-col overflow-hidden rounded-xl border border-blue-100">
 	<div
 		class="grid w-full grid-cols-8 items-center gap-2 border-b border-blue-100 bg-blue-300 px-3 py-2 text-xs text-white/60 uppercase"
 	>
@@ -48,21 +48,26 @@
 				}}
 			/>
 		</div>
-		<div class="col-span-4">
+		<div class="col-span-3">
 			<p>Sample</p>
 		</div>
-		<div>
+		<div class="flex justify-center">
 			<p>BPM</p>
 		</div>
-		<div>
+		<div class="flex justify-center">
 			<p>Length</p>
 		</div>
-		<div>
+		<div class="flex justify-center">
+			<p>Key</p>
+		</div>
+		<div class="flex justify-center">
 			<p>Type</p>
 		</div>
 	</div>
 
-	<div class="grid scrollbar-hidden w-full snap-y snap-always grid-cols-1 overflow-y-auto">
+	<div
+		class="grid scrollbar-hidden min-h-0 w-full snap-y snap-always grid-cols-1 overflow-y-scroll"
+	>
 		{#each samples as sample (sample.id)}
 			<SampleItem
 				{sample}

@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, integer, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, pgEnum, doublePrecision } from "drizzle-orm/pg-core";
 import { user } from "./auth";
 import { sampleType } from "./sampleType";
 
@@ -12,9 +12,10 @@ export const samples = pgTable('sample', {
     sampleFolder: text('sample_folder').notNull(),
     peaks: text('peaks'),
     fileSize: integer(),
-    sampleBpm: integer(),
-    duration: integer(),
+    sampleBpm: doublePrecision(),
+    duration: doublePrecision(),
     sampleRate: integer(),
+    estimatedKey: text(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
     userId: text('user_id').notNull().references(() => user.id),

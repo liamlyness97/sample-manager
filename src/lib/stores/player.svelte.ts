@@ -3,7 +3,10 @@ export type Sample = {
 	sampleName: string;
 	sampleUrl: string;
 	peaks: string | null;
-	bpm?: number | null;
+	sampleBpm?: number | null;
+	duration?: number | null;
+	sampleRate?: number | null;
+	estimatedKey?: string | null;
 	typeId?: string | null;
 };
 
