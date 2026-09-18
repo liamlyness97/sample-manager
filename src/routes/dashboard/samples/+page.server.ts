@@ -4,7 +4,6 @@ import { writeFile } from "fs/promises";
 import { mkdirSync } from "fs";
 import { db } from "$lib/server/db";
 import { samples } from "$lib/server/db/schema/samples";
-import { user } from "$lib/server/db/schema";
 import { eq } from "drizzle-orm";
 import { sampleType } from "$lib/server/db/schema/sampleType";
 import { env } from "$env/dynamic/private"
@@ -29,15 +28,13 @@ export const actions = {
 
         const sampleName = file?.name;
         const filepath = `uploads/${locals.user!.id}`;
-        const filename = `${filepath}/${crypto.randomUUID()}${extname(file.name.replace(/ /g, ''))}`;
+        const uploadFileName = `${crypto.randomUUID()}${extname(file.name.replace(/ /g, ''))}`;
+        const filename = `${filepath}/${uploadFileName}`;
 
         mkdirSync(filepath, { recursive: true });
         await writeFile(filename, Buffer.from(await file.arrayBuffer()));
 
-        // Testing the pass off to FastAPI
-        const fastApiTest = await fetch(`${env.FASTAPI_URL}/files/test`);
-        const fastApiRes = await fastApiTest.json()
-        console.log(fastApiRes)
+       
 
         await db.insert(samples).values({
             sampleName: sampleName,
@@ -51,6 +48,10 @@ export const actions = {
             status: 'pending'
         });
 
+         // Testing the pass off to FastAPI
+        const fastApiTest = await fetch(`${env.FASTAPI_URL}/files/test/${locals.user!.id}/${uploadFileName}`);
+        const fastApiRes = await fastApiTest.json()
+        console.log(fastApiRes)
 
         return { success: true };
     }
