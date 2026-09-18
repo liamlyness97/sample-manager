@@ -17,6 +17,9 @@
 	const isActive = $derived(player.state.activeSample?.id === sample.id);
 	const isPlaying = $derived(isActive && player.state.isPlaying);
 	const progress = $derived(isActive ? player.state.progress : 0);
+
+	let roundedBpm: number = $derived(Math.round(sample.sampleBpm ?? 0));
+	let formattedDuration: number = $derived(sample.duration?.toFixed(2));
 </script>
 
 <div
@@ -64,11 +67,11 @@
 		</div>
 	</div>
 	<div>
-		<p class="text-center text-sm text-white/70">{sample.sampleBpm ?? '—'}</p>
+		<p class="text-center text-sm text-white/70">{roundedBpm ?? '—'}</p>
 	</div>
 	<!-- Length: no duration is stored on the sample record yet -->
 	<div>
-		<p class="text-center text-sm text-white/70">{sample.duration ?? '—'}</p>
+		<p class="text-center text-sm text-white/70">{formattedDuration ?? '—'}</p>
 	</div>
 	<div>
 		<p class="text-center text-sm text-white/70">{sample.estimatedKey ?? '—'}</p>

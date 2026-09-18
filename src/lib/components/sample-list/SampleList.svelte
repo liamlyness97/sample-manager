@@ -55,7 +55,7 @@
 			<p>BPM</p>
 		</div>
 		<div class="flex justify-center">
-			<p>Length</p>
+			<p>Length (seconds)</p>
 		</div>
 		<div class="flex justify-center">
 			<p>Key</p>
