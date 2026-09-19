@@ -1,6 +1,8 @@
 import { pgTable, text, timestamp, integer, pgEnum, doublePrecision } from "drizzle-orm/pg-core";
 import { user } from "./auth";
 import { sampleType } from "./sampleType";
+import { relations } from "drizzle-orm";
+import { collectionSamples } from "./collectionSamples";
 
 export const statusEnum = pgEnum('status', ['pending', 'complete']);
 
@@ -22,3 +24,7 @@ export const samples = pgTable('sample', {
     typeId: text('type_id').references(() => sampleType.id),
     status: statusEnum('status').notNull().default('pending')
 });
+
+export const sampleRelations = relations(samples, ({ many }) => ({
+    collectionSamples: many(collectionSamples)
+}))

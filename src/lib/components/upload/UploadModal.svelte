@@ -183,7 +183,7 @@
 				<h2 id="upload-modal-title" class="text-lg font-light">Upload a sample</h2>
 				<button
 					type="button"
-					class="text-white/50 transition-colors hover:text-white"
+					class="cursor-pointer text-white/50 transition-colors hover:text-white"
 					aria-label="Close"
 					onclick={close}
 				>
