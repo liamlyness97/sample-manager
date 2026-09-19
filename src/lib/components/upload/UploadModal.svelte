@@ -5,15 +5,18 @@
 	import { extractPeaks } from '$lib/helpers/extractPeaks';
 
 	type SampleTypeOption = { id: string; name: string };
+	type CollectionsOption = { id: string; name: string };
 
 	let {
 		open = $bindable(false),
 		types,
+		collections,
 		action = '?/upload',
 		onsuccess
 	}: {
 		open?: boolean;
 		types: SampleTypeOption[];
+		collections: CollectionsOption[];
 		action?: string;
 		onsuccess?: () => void;
 	} = $props();
@@ -33,6 +36,25 @@
 
 	let dialog = $state<HTMLDivElement>();
 
+	let collectionInput: string = $state('');
+	let selectedCollections: CollectionsOption[] = $state([]);
+	let selectedIds = $derived(new Set(selectedCollections.map((c) => c.id)));
+
+	let filteredCollection = $derived(
+		collections.filter((item) =>
+			item.name.toLowerCase().includes(collectionInput.trim().toLowerCase())
+		)
+	);
+
+	function addCollection(name: string, id: string) {
+		selectedCollections.push({ name: name, id: id });
+		collectionInput = '';
+	}
+
+	function removeCollection(id: string) {
+		selectedCollections = selectedCollections.filter((c) => c.id !== id);
+	}
+
 	function clearFile() {
 		file = null;
 		meta = null;
@@ -45,6 +67,7 @@
 		reading = false;
 		uploading = false;
 		sampleTypeId = 'none';
+		selectedCollections = [];
 	}
 
 	function close() {
@@ -104,6 +127,9 @@
 			formData.append('file', file);
 			formData.append('peaks', JSON.stringify(meta.peaks));
 			formData.append('sampleType', sampleTypeId);
+			for (const collection of selectedCollections) {
+				formData.append('collectionIds', collection.id);
+			}
 
 			const res = await fetch(action, { method: 'POST', body: formData });
 			if (!res.ok) throw new Error('Upload failed');
@@ -247,6 +273,49 @@
 							<option value={type.id}>{type.name}</option>
 						{/each}
 					</select>
+				</label>
+
+				<label class="flex flex-col gap-1.5 text-sm">
+					<span class="text-white/60">Collections</span>
+					<div class="relative">
+						<input
+							class="w-full rounded-lg border border-white/15 bg-blue-300 px-3 py-2 text-white outline-none focus:border-white/40"
+							type="text"
+							name="collectionInput"
+							id="collectionInput"
+							placeholder="Assign sample to collections"
+							bind:value={collectionInput}
+						/>
+						{#if collectionInput}
+							<div
+								class="absolute top-full left-0 z-20 flex w-full flex-col items-start rounded-b-xl bg-blue-300 py-2"
+							>
+								{#each filteredCollection as collection (collection.id)}
+									{#if !selectedIds.has(collection.id)}
+										<button
+											onclick={() => addCollection(collection.name, collection.id)}
+											class="w-full cursor-pointer px-4 py-2 text-left duration-200 hover:bg-blue-100"
+										>
+											{collection.name}
+										</button>
+									{/if}
+								{/each}
+							</div>
+						{/if}
+					</div>
+					{#if selectedCollections.length >= 1}
+						<div class="flex flex-wrap gap-2 pt-2">
+							{#each selectedCollections as collection (collection.id)}
+								<button
+									class="cursor-pointer rounded-full bg-orange-600 px-4 py-2 text-sm text-white duration-200 hover:opacity-80"
+									onclick={() => removeCollection(collection.id)}
+								>
+									{collection.name}
+									<span> X </span>
+								</button>
+							{/each}
+						</div>
+					{/if}
 				</label>
 
 				{#if uploadError}

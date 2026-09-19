@@ -16,7 +16,7 @@
 			<p>{data.sampleCount} of {data.sampleCount} | sorted by recently added</p>
 			<div class="flex gap-2">
 				<button
-					class="rounded-md bg-orange-600 px-6 py-2 text-white"
+					class="cursor-pointer rounded-md bg-orange-600 px-6 py-2 text-white duration-200 hover:opacity-80"
 					onclick={() => (uploadOpen = true)}
 				>
 					Upload
@@ -45,4 +45,9 @@
 	</div>
 </div>
 
-<UploadModal bind:open={uploadOpen} types={data.types} onsuccess={() => invalidateAll()} />
+<UploadModal
+	bind:open={uploadOpen}
+	types={data.types}
+	collections={data.collections}
+	onsuccess={() => invalidateAll()}
+/>
