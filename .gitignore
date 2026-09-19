@@ -26,3 +26,6 @@ test-results
 # SQLite
 *.db
 /fast-api
+
+# Uploads
+/uploads

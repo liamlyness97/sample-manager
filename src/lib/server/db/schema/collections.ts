@@ -1,6 +1,7 @@
 import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { user } from "./auth";
 import { collectionSamples } from "./collectionSamples";
+import { relations } from "drizzle-orm";
 
 export const collections = pgTable('collections', {
     id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),

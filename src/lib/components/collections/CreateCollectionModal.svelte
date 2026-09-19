@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
+	import type { SubmitFunction } from '@sveltejs/kit';
+
 	let {
 		open = $bindable(false),
 		action = '?/create',
@@ -11,9 +14,30 @@
 
 	let dialog = $state<HTMLDivElement>();
 
+	let error = $state<string | null>(null);
+	let submitting = $state(false);
+
 	function close() {
 		open = false;
 	}
+
+	const handleSubmitting: SubmitFunction = () => {
+		submitting = true;
+		error = null;
+
+		return async ({ result, update }) => {
+			submitting = false;
+
+			if (result.type === 'success') {
+				await update();
+				close();
+			} else if (result.type === 'failure') {
+				error = (result.data?.error as string) ?? 'Something went wrong creating collection';
+			} else {
+				await update();
+			}
+		};
+	};
 
 	function onKeydown(event: KeyboardEvent) {
 		if (event.key === 'Escape') {
@@ -75,7 +99,12 @@
 					</svg>
 				</button>
 			</div>
-			<form class="flex min-h-0 flex-col gap-5 overflow-y-auto border-t border-white/10 px-6 py-6">
+			<form
+				method="POST"
+				action="?/create"
+				use:enhance={handleSubmitting}
+				class="flex min-h-0 flex-col gap-5 overflow-y-auto border-t border-white/10 px-6 py-6"
+			>
 				<label class="flex flex-col gap-1.5 text-sm">
 					<span class="text-white/60">Collection Name</span>
 					<input
@@ -96,6 +125,9 @@
 						placeholder="Enter a highlight hex colour"
 					/>
 				</label>
+				{#if error}
+					<p class="text-red-500">{error}</p>
+				{/if}
 				<div class="flex items-center justify-end gap-3 pt-1">
 					<button
 						type="button"
@@ -106,6 +138,7 @@
 					</button>
 					<button
 						type="submit"
+						disabled={submitting}
 						class="cursor-pointer rounded-lg bg-orange-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-500 disabled:opacity-50"
 					>
 						Create
