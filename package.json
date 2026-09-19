@@ -60,8 +60,9 @@
 		"@sveltejs/adapter-node": "^5.5.4",
 		"better-auth": "^1.5.6",
 		"dotenv": "^17.4.2",
-		"mime-types": "^3.0.2",
 		"drizzle-orm": "^0.45.2",
+		"iconify-icon": "^3.0.3",
+		"mime-types": "^3.0.2",
 		"pg": "^8.20.0"
 	}
 }
