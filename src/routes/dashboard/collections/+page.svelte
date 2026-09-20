@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { invalidateAll } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import CreateCollectionModal from '$lib/components/collections/CreateCollectionModal.svelte';
 
 	let { data } = $props();
@@ -30,14 +30,15 @@
 	{#if data.collectionsList}
 		<div class="grid grid-cols-5 gap-4">
 			{#each data.collectionsList as collection (collection.id)}
-				<div
+				<button
+					onclick={() => goto(`/dashboard/collections/${collection.id}`)}
 					style="--highlight: {collection.highlight}"
-					class="flex flex-col gap-2 rounded-2xl border border-blue-100/50 bg-blue-100 p-4"
+					class="flex cursor-pointer flex-col items-start gap-2 rounded-2xl border border-blue-100 bg-blue-100 p-4 duration-200 hover:border-white/20"
 				>
 					<div class="h-8 w-8 rounded-lg bg-(--highlight)"></div>
 					<p class="text-xl font-medium text-white">{collection.name}</p>
 					<p class="text-sm font-light text-blue-50 opacity-50">142 samples</p>
-				</div>
+				</button>
 			{/each}
 		</div>
 	{:else}
