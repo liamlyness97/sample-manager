@@ -3,18 +3,25 @@ import type { LayoutServerLoad } from "./$types";
 import { auth } from "$lib/auth/auth.js";
 import { samples, sampleType } from "$lib/server/db/schema";
 import { db } from "$lib/server/db";
-import { eq } from "drizzle-orm";
+import { and, desc, eq, isNotNull } from "drizzle-orm";
 
-export const load: LayoutServerLoad = async ({ locals }) => {
+export const load: LayoutServerLoad = async ({ locals, depends }) => {
+    depends('app:recent-samples')
+
     if (!locals.session) {
         redirect(303, '/login');
     }
 
+    if (!locals.user) return { recentSamples: [] };
+
     const sampleList = await db.select().from(samples).where(eq(samples.userId, locals.user!.id))
 
-    
+    const recentSamples = await db
+        .select()
+        .from(samples)
+        .where(and(eq(samples.userId, locals.user.id), isNotNull(samples.lastPlayedAt)))
+        .orderBy(desc(samples.lastPlayedAt))
+        .limit(5)
 
-    const sampleTypes = await db.select().from(sampleType).where(eq(sampleType.userId, locals.user!.id))
-
-    return { user: locals.user, session: locals.session, sampleCount: sampleList.length };
+    return { user: locals.user, session: locals.session, sampleCount: sampleList.length, recentSamples };
 };

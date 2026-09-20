@@ -12,7 +12,7 @@
 <NavBar name={data.user.name} />
 
 <div class="flex h-screen w-full justify-between gap-8 bg-blue-200">
-	<SidebarNav />
+	<SidebarNav recentSamples={data.recentSamples} />
 	<div class="h-full w-full py-20 pr-8">
 		{@render children()}
 	</div>
