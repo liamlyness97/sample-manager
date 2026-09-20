@@ -20,6 +20,8 @@ export const samples = pgTable('sample', {
     estimatedKey: text(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
+    lastPlayedAt: timestamp('last_played_at'),
+    playCount: integer('play_count').notNull().default(0),
     userId: text('user_id').notNull().references(() => user.id),
     typeId: text('type_id').references(() => sampleType.id),
     status: statusEnum('status').notNull().default('pending')

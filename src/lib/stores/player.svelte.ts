@@ -1,3 +1,5 @@
+import { createPlayTracker, reportPlay } from '$lib/helpers/playTracker';
+
 export type Sample = {
 	id: string;
 	sampleName: string;
@@ -41,6 +43,15 @@ let rafId = 0;
 // user has already picked another sample can bail out instead of playing.
 let loadToken = 0;
 
+// True once the current play-through has been reported, so pausing and
+// resuming (or seeking) can never count the same play twice. Reset whenever
+// playback starts from the beginning.
+let playCounted = false;
+const tracker = createPlayTracker((id) => {
+	playCounted = true;
+	reportPlay(id);
+}, 1000);
+
 function getAudioCtx() {
 	if (!audioCtx) {
 		audioCtx = new AudioContext();
@@ -52,6 +63,8 @@ function getAudioCtx() {
 }
 
 function teardownSource() {
+	// Any pause, seek, or sample change drops a play that has not qualified yet.
+	tracker.cancel();
 	if (sourceNode) {
 		sourceNode.onended = null;
 		try {
@@ -91,8 +104,15 @@ function startPlayback(offset: number) {
 	startOffset = offset;
 	state.isPlaying = true;
 
+	// Starting from the beginning is a fresh play-through
+	if (offset === 0) playCounted = false;
+	const sampleId = state.activeSample?.id;
+	if (sampleId && !playCounted) tracker.start(sampleId);
+
 	sourceNode.onended = () => {
-		// Only reached on natural end — teardownSource() nulls this handler first.
+		// Only reached on natural end: teardownSource() nulls this handler first.
+		// Short samples end before the qualify timer fires, so report them here.
+		tracker.finish();
 		state.isPlaying = false;
 		state.progress = 0;
 		state.currentTime = 0;
