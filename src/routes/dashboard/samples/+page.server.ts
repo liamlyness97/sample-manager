@@ -1,6 +1,6 @@
 import { dirname, extname } from "path";
 import type { Actions, PageServerLoad } from "./$types";
-import { writeFile } from "fs/promises";
+import { unlink, writeFile } from "fs/promises";
 import { mkdirSync } from "fs";
 import { db } from "$lib/server/db";
 import { samples } from "$lib/server/db/schema/samples";
@@ -136,6 +136,62 @@ export const actions = {
                 ).onConflictDoNothing();
             }
         }
+
+        return { success: true };
+    },
+    renameSamples: async ({ request, locals }) => {
+        const data = await request.formData();
+
+        const sampleIds = [
+            ...new Set(data.getAll('sampleIds').filter((v): v is string => typeof v === 'string'))
+        ];
+
+        if (sampleIds.length === 0) {
+            return fail(400, { error: 'No samples selected' });
+        }
+
+        const ownedSamples = await db
+            .select({ id: samples.id })
+            .from(samples)
+            .where(and(inArray(samples.id, sampleIds), eq(samples.userId, locals.user!.id)));
+        const ownedSampleIds = ownedSamples.map((s) => s.id);
+
+        if (ownedSampleIds.length === 0) {
+            return fail(403, { error: 'Not authorized to rename these samples' });
+        }
+
+        for (const sampleId of ownedSampleIds) {
+            const newName = (data.get(`sampleName_${sampleId}`) as string | null)?.trim();
+            if (!newName) continue;
+
+            await db.update(samples).set({ sampleName: newName }).where(eq(samples.id, sampleId));
+        }
+
+        return { success: true };
+    },
+    deleteSamples: async ({ request, locals }) => {
+        const data = await request.formData();
+
+        const sampleIds = [
+            ...new Set(data.getAll('sampleIds').filter((v): v is string => typeof v === 'string'))
+        ];
+
+        if (sampleIds.length === 0) {
+            return fail(400, { error: 'No samples selected' });
+        }
+
+        const ownedSamples = await db
+            .select({ id: samples.id, sampleUrl: samples.sampleUrl })
+            .from(samples)
+            .where(and(inArray(samples.id, sampleIds), eq(samples.userId, locals.user!.id)));
+
+        if (ownedSamples.length === 0) {
+            return fail(403, { error: 'Not authorized to delete these samples' });
+        }
+
+        await db.delete(samples).where(inArray(samples.id, ownedSamples.map((s) => s.id)));
+
+        await Promise.all(ownedSamples.map((s) => unlink(s.sampleUrl).catch(() => {})));
 
         return { success: true };
     }

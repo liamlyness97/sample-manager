@@ -3,7 +3,9 @@
 	import SampleItem from './SampleItem.svelte';
 	import { player, type Sample } from '$lib/stores/player.svelte';
 	import EditCollectionsModal from '../collections/EditCollectionsModal.svelte';
+	import RenameSamplesModal from './RenameSamplesModal.svelte';
 	import { invalidateAll } from '$app/navigation';
+	import { enhance } from '$app/forms';
 	import { fly } from 'svelte/transition';
 
 	type SampleTypeOption = { id: string; name: string };
@@ -23,6 +25,9 @@
 	} = $props();
 
 	let editCollection = $state(false);
+	let renameSamples = $state(false);
+	let deleteForm = $state<HTMLFormElement>();
+	let deleting = $state(false);
 
 	const typeNames = $derived(new Map(types.map((t) => [t.id, t.name])));
 
@@ -48,6 +53,14 @@
 	$effect(() => {
 		player.setQueue(samples);
 	});
+
+	function confirmDelete() {
+		if (selectedSamples.length === 0 || deleting) return;
+		const label =
+			selectedSamples.length === 1 ? 'this sample' : `these ${selectedSamples.length} samples`;
+		if (!confirm(`Delete ${label}? This can't be undone.`)) return;
+		deleteForm?.requestSubmit();
+	}
 </script>
 
 <div class="flex h-full min-h-0 w-full flex-col overflow-hidden rounded-xl border border-blue-100">
@@ -102,11 +115,15 @@
 			out:fly={{ y: 50, duration: 200 }}
 			class="absolute right-0 bottom-20 left-0 mx-auto flex w-fit gap-4 rounded-full border border-blue-100 bg-blue-300 px-4 py-2 text-sm text-white"
 		>
-			<button> Rename Sample </button>
+			<button class="cursor-pointer" onclick={() => (renameSamples = true)}>
+				Rename Sample
+			</button>
 			<button class="cursor-pointer" onclick={() => (editCollection = true)}>
 				Edit Collection
 			</button>
-			<button class="text-red-500"> Delete Sample </button>
+			<button class="cursor-pointer text-red-500" disabled={deleting} onclick={confirmDelete}>
+				Delete Sample
+			</button>
 		</div>
 	{/if}
 </div>
@@ -118,3 +135,31 @@
 	onsuccess={() => invalidateAll()}
 	action="?/editSampleCollection"
 />
+
+<RenameSamplesModal
+	bind:open={renameSamples}
+	samples={selectedSamples}
+	onsuccess={() => invalidateAll()}
+	action="?/renameSamples"
+/>
+
+<form
+	bind:this={deleteForm}
+	method="POST"
+	action="?/deleteSamples"
+	class="hidden"
+	use:enhance={() => {
+		deleting = true;
+		return async ({ result, update }) => {
+			deleting = false;
+			if (result.type === 'success') {
+				selectedIds.clear();
+			}
+			await update();
+		};
+	}}
+>
+	{#each selectedSamples as sample (sample.id)}
+		<input type="hidden" name="sampleIds" value={sample.id} />
+	{/each}
+</form>
