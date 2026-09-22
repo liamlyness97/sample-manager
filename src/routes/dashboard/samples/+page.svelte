@@ -41,7 +41,7 @@
 			</div>
 		</div>
 
-		<SampleList samples={data.samples} types={data.types} />
+		<SampleList samples={data.samples} types={data.types} collections={data.collections} />
 	</div>
 </div>
 

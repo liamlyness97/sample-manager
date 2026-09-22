@@ -6,8 +6,20 @@
 	import { invalidateAll } from '$app/navigation';
 
 	type SampleTypeOption = { id: string; name: string };
+	type CollectionsOption = { id: string; name: string };
+	type SampleWithCollections = Sample & {
+		collectionSamples?: { collectionId: string; collection: CollectionsOption }[];
+	};
 
-	let { samples, types = [] }: { samples: Sample[]; types?: SampleTypeOption[] } = $props();
+	let {
+		samples,
+		types = [],
+		collections = []
+	}: {
+		samples: SampleWithCollections[];
+		types?: SampleTypeOption[];
+		collections?: CollectionsOption[];
+	} = $props();
 
 	let editCollection = $state(false);
 
@@ -88,10 +100,18 @@
 			class="absolute right-0 bottom-20 left-0 mx-auto flex w-fit gap-4 rounded-full border border-blue-100 bg-blue-300 px-4 py-2 text-sm text-white"
 		>
 			<button> Rename Sample </button>
-			<button onclick={() => (editCollection = true)}> Edit Collection </button>
+			<button class="cursor-pointer" onclick={() => (editCollection = true)}>
+				Edit Collection
+			</button>
 			<button class="text-red-500"> Delete Sample </button>
 		</div>
 	{/if}
 </div>
 
-<EditCollectionsModal bind:open={editCollection} onsuccess={() => invalidateAll()} />
+<EditCollectionsModal
+	bind:open={editCollection}
+	samples={selectedSamples}
+	{collections}
+	onsuccess={() => invalidateAll()}
+	action="?/editSampleCollection"
+/>

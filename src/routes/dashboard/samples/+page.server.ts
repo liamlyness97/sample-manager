@@ -4,7 +4,7 @@ import { writeFile } from "fs/promises";
 import { mkdirSync } from "fs";
 import { db } from "$lib/server/db";
 import { samples } from "$lib/server/db/schema/samples";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { sampleType } from "$lib/server/db/schema/sampleType";
 import { env } from "$env/dynamic/private"
 import { collections } from "$lib/server/db/schema/collections";
@@ -13,9 +13,17 @@ import { collectionSamples } from "$lib/server/db/schema/collectionSamples";
 
 
 export const load: PageServerLoad = async ({ locals }) => {
-    const sampleList = await db.select().from(samples).where(eq(samples.userId, locals.user!.id))
+    const sampleList = await db.query.samples.findMany({
+        where: eq(samples.userId, locals.user!.id),
+        with: {
+            collectionSamples: {
+                with: {collection: true}
+            }
+        }
+    })
     const sampleTypes = await db.select().from(sampleType).where(eq(sampleType.userId, locals.user!.id))
     const collectionsList = await db.select().from(collections).where(eq(collections.userId, locals.user!.id))
+
 
 
     return {
@@ -80,6 +88,54 @@ export const actions = {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({sample: newSample, filename: uploadFileName})
         })
+
+        return { success: true };
+    },
+    editSampleCollection: async ({ request, locals }) => {
+        const data = await request.formData();
+
+        const sampleIds = [
+            ...new Set(data.getAll('sampleIds').filter((v): v is string => typeof v === 'string'))
+        ];
+
+        if (sampleIds.length === 0) {
+            return fail(400, { error: 'No samples selected' });
+        }
+
+        const ownedSamples = await db
+            .select({ id: samples.id })
+            .from(samples)
+            .where(and(inArray(samples.id, sampleIds), eq(samples.userId, locals.user!.id)));
+        const ownedSampleIds = ownedSamples.map((s) => s.id);
+
+        if (ownedSampleIds.length === 0) {
+            return fail(403, { error: 'Not authorized to edit these samples' });
+        }
+
+        for (const sampleId of ownedSampleIds) {
+            const requestedCollectionIds = [
+                ...new Set(
+                    data.getAll(`collectionIds_${sampleId}`).filter((v): v is string => typeof v === 'string')
+                )
+            ];
+
+            const validCollectionIds = requestedCollectionIds.length > 0
+                ? (
+                    await db
+                        .select({ id: collections.id })
+                        .from(collections)
+                        .where(and(inArray(collections.id, requestedCollectionIds), eq(collections.userId, locals.user!.id)))
+                ).map((r) => r.id)
+                : [];
+
+            await db.delete(collectionSamples).where(eq(collectionSamples.sampleId, sampleId));
+
+            if (validCollectionIds.length > 0) {
+                await db.insert(collectionSamples).values(
+                    validCollectionIds.map((collectionId) => ({ collectionId, sampleId }))
+                ).onConflictDoNothing();
+            }
+        }
 
         return { success: true };
     }

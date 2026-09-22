@@ -1,3 +1,5 @@
 export * from './auth.ts'
 export * from './samples.ts'
 export * from './sampleType.ts'
+export * from './collectionSamples.ts'
+export * from './collections.ts'

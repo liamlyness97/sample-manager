@@ -2,14 +2,25 @@
 	import { enhance } from '$app/forms';
 	import type { SubmitFunction } from '@sveltejs/kit';
 
+	type CollectionsOption = { id: string; name: string };
+	type SampleWithCollections = {
+		id: string;
+		sampleName: string;
+		collectionSamples?: { collectionId: string; collection: CollectionsOption }[];
+	};
+
 	let {
 		open = $bindable(false),
 		action = '?/editSampleCollection',
-		onsuccess
+		onsuccess,
+		samples,
+		collections
 	}: {
 		open?: boolean;
 		action?: string;
 		onsuccess?: () => void;
+		samples: SampleWithCollections[];
+		collections: CollectionsOption[];
 	} = $props();
 
 	let dialog = $state<HTMLDivElement>();
@@ -17,9 +28,46 @@
 	let error = $state<string | null>(null);
 	let submitting = $state(false);
 
+	// Per-sample picker state, keyed by sample id — mirrors UploadModal's collection picker.
+	let collectionInputBySample = $state<Record<string, string>>({});
+	let selectedCollectionsBySample = $state<Record<string, CollectionsOption[]>>({});
+
+	function filteredCollections(sampleId: string) {
+		const input = collectionInputBySample[sampleId] ?? '';
+		const selectedIds = new Set((selectedCollectionsBySample[sampleId] ?? []).map((c) => c.id));
+		return collections.filter(
+			(c) => !selectedIds.has(c.id) && c.name.toLowerCase().includes(input.trim().toLowerCase())
+		);
+	}
+
+	function addCollection(sampleId: string, collection: CollectionsOption) {
+		const current = selectedCollectionsBySample[sampleId] ?? [];
+		selectedCollectionsBySample[sampleId] = [...current, collection];
+		collectionInputBySample[sampleId] = '';
+	}
+
+	function removeCollection(sampleId: string, collectionId: string) {
+		selectedCollectionsBySample[sampleId] = (selectedCollectionsBySample[sampleId] ?? []).filter(
+			(c) => c.id !== collectionId
+		);
+	}
+
 	function close() {
 		open = false;
 	}
+
+	// Reset/seed the picker from each sample's current collections whenever the modal opens.
+	$effect(() => {
+		if (!open) return;
+		const inputs: Record<string, string> = {};
+		const selected: Record<string, CollectionsOption[]> = {};
+		for (const sample of samples) {
+			inputs[sample.id] = '';
+			selected[sample.id] = (sample.collectionSamples ?? []).map((cs) => cs.collection);
+		}
+		collectionInputBySample = inputs;
+		selectedCollectionsBySample = selected;
+	});
 
 	const handleSubmitting: SubmitFunction = () => {
 		submitting = true;
@@ -31,6 +79,7 @@
 			if (result.type === 'success') {
 				await update();
 				close();
+				onsuccess?.();
 			} else if (result.type === 'failure') {
 				error = (result.data?.error as string) ?? 'Something went wrong editing sample collection';
 			} else {
@@ -101,20 +150,54 @@
 			</div>
 			<form
 				method="POST"
-				action="?/create"
+				{action}
 				use:enhance={handleSubmitting}
 				class="flex min-h-0 flex-col gap-5 overflow-y-auto border-t border-white/10 px-6 py-6"
 			>
-				<label class="flex flex-col gap-1.5 text-sm">
-					<span class="text-white/60">Collection Name</span>
-					<input
-						class="rounded-lg border border-white/15 bg-blue-300 px-3 py-2 text-white outline-none focus:border-white/40"
-						type="text"
-						name="name"
-						id="name"
-						placeholder="Enter a collection name"
-					/>
-				</label>
+				{#each samples as sample (sample.id)}
+					<label class="flex flex-col gap-1.5 text-sm">
+						<input type="hidden" name="sampleIds" value={sample.id} />
+						<span class="text-white/60">{sample.sampleName}</span>
+						<div class="relative">
+							<input
+								class="w-full rounded-lg border border-white/15 bg-blue-300 px-3 py-2 text-white outline-none focus:border-white/40"
+								type="text"
+								placeholder="Assign sample to collections"
+								bind:value={collectionInputBySample[sample.id]}
+							/>
+							{#if collectionInputBySample[sample.id]}
+								<div
+									class="absolute top-full left-0 z-20 flex w-full flex-col items-start rounded-b-xl bg-blue-300 py-2"
+								>
+									{#each filteredCollections(sample.id) as collection (collection.id)}
+										<button
+											type="button"
+											onclick={() => addCollection(sample.id, collection)}
+											class="w-full cursor-pointer px-4 py-2 text-left duration-200 hover:bg-blue-100"
+										>
+											{collection.name}
+										</button>
+									{/each}
+								</div>
+							{/if}
+						</div>
+						{#if (selectedCollectionsBySample[sample.id] ?? []).length > 0}
+							<div class="flex flex-wrap gap-2 pt-2">
+								{#each selectedCollectionsBySample[sample.id] as collection (collection.id)}
+									<button
+										type="button"
+										class="cursor-pointer rounded-full bg-orange-600 px-4 py-2 text-xs text-white duration-200 hover:opacity-80"
+										onclick={() => removeCollection(sample.id, collection.id)}
+									>
+										{collection.name}
+										<span> X </span>
+									</button>
+									<input type="hidden" name={`collectionIds_${sample.id}`} value={collection.id} />
+								{/each}
+							</div>
+						{/if}
+					</label>
+				{/each}
 				{#if error}
 					<p class="text-red-500">{error}</p>
 				{/if}
@@ -131,7 +214,7 @@
 						disabled={submitting}
 						class="cursor-pointer rounded-lg bg-orange-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-500 disabled:opacity-50"
 					>
-						Create
+						Save
 					</button>
 				</div>
 			</form>
