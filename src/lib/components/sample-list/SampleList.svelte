@@ -2,16 +2,21 @@
 	import { SvelteSet } from 'svelte/reactivity';
 	import SampleItem from './SampleItem.svelte';
 	import { player, type Sample } from '$lib/stores/player.svelte';
+	import EditCollectionsModal from '../collections/EditCollectionsModal.svelte';
+	import { invalidateAll } from '$app/navigation';
 
 	type SampleTypeOption = { id: string; name: string };
 
 	let { samples, types = [] }: { samples: Sample[]; types?: SampleTypeOption[] } = $props();
+
+	let editCollection = $state(false);
 
 	const typeNames = $derived(new Map(types.map((t) => [t.id, t.name])));
 
 	const selectedIds = new SvelteSet<string>();
 	const allSelected = $derived(samples.length > 0 && selectedIds.size === samples.length);
 	const someSelected = $derived(selectedIds.size > 0 && !allSelected);
+	let selectedSamples = $derived(samples.filter((s) => selectedIds.has(s.id)));
 
 	function toggle(id: string) {
 		if (selectedIds.has(id)) selectedIds.delete(id);
@@ -77,4 +82,16 @@
 			/>
 		{/each}
 	</div>
+
+	{#if selectedSamples.length > 0}
+		<div
+			class="absolute right-0 bottom-20 left-0 mx-auto flex w-fit gap-4 rounded-full border border-blue-100 bg-blue-300 px-4 py-2 text-sm text-white"
+		>
+			<button> Rename Sample </button>
+			<button onclick={() => (editCollection = true)}> Edit Collection </button>
+			<button class="text-red-500"> Delete Sample </button>
+		</div>
+	{/if}
 </div>
+
+<EditCollectionsModal bind:open={editCollection} onsuccess={() => invalidateAll()} />

@@ -35,25 +35,27 @@
 			onchange={() => ontoggle?.()}
 			aria-label={`Select ${sample.sampleName}`}
 		/>
-		<button
-			class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-white transition-colors hover:bg-blue-100/80"
-			aria-label={isPlaying ? `Pause ${sample.sampleName}` : `Play ${sample.sampleName}`}
-			onclick={() => player.load(sample)}
-		>
-			<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24">
-				{#if isPlaying}
-					<path
-						fill="currentColor"
-						d="M9 16q-.425 0-.712-.288T8 15V9q0-.425.288-.712T9 8t.713.288T10 9v6q0 .425-.288.713T9 16m6 0q-.425 0-.712-.288T14 15V9q0-.425.288-.712T15 8t.713.288T16 9v6q0 .425-.288.713T15 16"
-					/>
-				{:else}
-					<path
-						fill="currentColor"
-						d="M9 15.714V8.287q0-.368.244-.588q.243-.22.568-.22q.102 0 .213.028q.11.027.211.083l5.843 3.733q.186.13.28.298q.093.167.093.379t-.093.379t-.28.298l-5.843 3.733q-.101.055-.213.083t-.213.028q-.326 0-.568-.22T9 15.714"
-					/>
-				{/if}
-			</svg>
-		</button>
+		<div class="flex w-full justify-center">
+			<button
+				class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-white transition-colors hover:bg-blue-100/80"
+				aria-label={isPlaying ? `Pause ${sample.sampleName}` : `Play ${sample.sampleName}`}
+				onclick={() => player.load(sample)}
+			>
+				<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24">
+					{#if isPlaying}
+						<path
+							fill="currentColor"
+							d="M9 16q-.425 0-.712-.288T8 15V9q0-.425.288-.712T9 8t.713.288T10 9v6q0 .425-.288.713T9 16m6 0q-.425 0-.712-.288T14 15V9q0-.425.288-.712T15 8t.713.288T16 9v6q0 .425-.288.713T15 16"
+						/>
+					{:else}
+						<path
+							fill="currentColor"
+							d="M9 15.714V8.287q0-.368.244-.588q.243-.22.568-.22q.102 0 .213.028q.11.027.211.083l5.843 3.733q.186.13.28.298q.093.167.093.379t-.093.379t-.28.298l-5.843 3.733q-.101.055-.213.083t-.213.028q-.326 0-.568-.22T9 15.714"
+						/>
+					{/if}
+				</svg>
+			</button>
+		</div>
 	</div>
 
 	<div class="col-span-3 flex min-w-0 flex-col gap-1">
