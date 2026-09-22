@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import type { SubmitFunction } from '@sveltejs/kit';
+	import { fade, fly } from 'svelte/transition';
 
 	type CollectionsOption = { id: string; name: string };
 	type SampleWithCollections = {
@@ -115,7 +116,10 @@
 </script>
 
 {#if open}
-	<div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+	<div
+		transition:fade={{ duration: 100 }}
+		class="fixed inset-0 z-50 flex items-center justify-center p-4"
+	>
 		<button
 			type="button"
 			tabindex="-1"
@@ -125,6 +129,8 @@
 		></button>
 
 		<div
+			in:fly={{ duration: 300, y: 50 }}
+			out:fly={{ duration: 200, y: 50 }}
 			bind:this={dialog}
 			class="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-white/10 bg-blue-200 text-white shadow-2xl outline-none"
 			role="dialog"

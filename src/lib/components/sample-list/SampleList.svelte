@@ -4,6 +4,7 @@
 	import { player, type Sample } from '$lib/stores/player.svelte';
 	import EditCollectionsModal from '../collections/EditCollectionsModal.svelte';
 	import { invalidateAll } from '$app/navigation';
+	import { fly } from 'svelte/transition';
 
 	type SampleTypeOption = { id: string; name: string };
 	type CollectionsOption = { id: string; name: string };
@@ -97,6 +98,8 @@
 
 	{#if selectedSamples.length > 0}
 		<div
+			in:fly={{ y: 50, duration: 300 }}
+			out:fly={{ y: 50, duration: 200 }}
 			class="absolute right-0 bottom-20 left-0 mx-auto flex w-fit gap-4 rounded-full border border-blue-100 bg-blue-300 px-4 py-2 text-sm text-white"
 		>
 			<button> Rename Sample </button>
