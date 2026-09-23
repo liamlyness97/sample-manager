@@ -37,9 +37,9 @@ async def analyse_audio(user_id: str, filename: str):
 
     harm_ratio = harmonic_ratio(y_harmonic, y_percussive)
 
-    if ratio >= 0.5:
+    if harm_ratio >= 0.5:
         tonality = 'tonal'
-    if ratio < 0.5:
+    if harm_ratio < 0.5:
         tonality = 'noisy'
     else:
         tonality: 'n/a'
@@ -52,7 +52,7 @@ async def analyse_audio(user_id: str, filename: str):
         "duration": float(duration),
         "sampleRate": int(sr),
         "key": key,
-        "harmonicRatio": ratio,
+        "harmonicRatio": harm_ratio,
         "tonality": tonality
     }
 
