@@ -45,7 +45,7 @@ export const actions = {
         ];
 
         const validIds = requested.length > 0 ? (
-            await db.select({ id: collections.id }).from(collections).where(inArray(collections.id, requested))
+            await db.select({ id: collections.id }).from(collections).where(and(inArray(collections.id, requested), eq(collections.userId, locals.user!.id)))
         ).map((r) => r.id) : []
 
         const sampleName = file?.name;
