@@ -2,7 +2,7 @@ import numpy as np
 import librosa
 from fastapi_server.audio.constants import MAJOR_PROFILE, MINOR_PROFILE, NOTE_NAMES
 
-def estimate_key(y: np.ndarray, sr: int) -> str:
+def estimate_key(y: np.ndarray, sr: int) -> str | None:
     chroma = librosa.feature.chroma_cqt(y=y, sr=sr)
     chroma_avg = np.mean(chroma, axis=1)
 
@@ -27,6 +27,7 @@ def estimate_key(y: np.ndarray, sr: int) -> str:
             best_key = NOTE_NAMES[i]
             best_mode = 'minor'
 
-        
+        if best_key is None:
+            return None
 
     return f"{best_key} {best_mode}"
