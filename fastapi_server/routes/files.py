@@ -6,6 +6,7 @@ from pathlib import Path
 from fastapi import APIRouter, UploadFile
 from fastapi_server.audio.key_detection import estimate_key
 from fastapi_server.audio.harmonic_ratio import harmonic_ratio
+from fastapi_server.audio.constants import TONAL_THRESHOLD
 
 UPLOAD_DIR = Path(os.environ.get("UPLOAD_DIR", "../uploads"))
 
@@ -37,12 +38,12 @@ async def analyse_audio(user_id: str, filename: str):
 
     harm_ratio = harmonic_ratio(y_harmonic, y_percussive)
 
-    if harm_ratio >= 0.5:
+    if harm_ratio is None:
+        tonality = None
+    elif harm_ratio >= TONAL_THRESHOLD:
         tonality = 'tonal'
-    if harm_ratio < 0.5:
-        tonality = 'noisy'
     else:
-        tonality: 'n/a'
+        tonality = 'noisy'
 
     duration = librosa.get_duration(y=y, sr=sr)
     key = estimate_key(y, sr)

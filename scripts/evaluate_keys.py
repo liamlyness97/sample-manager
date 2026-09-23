@@ -29,7 +29,7 @@ from fastapi_server.audio.constants import NOTE_NAMES  # noqa: E402
 
 # Key profiles, index 0 = tonic. Values copied from Essentia's key.cpp
 # (github.com/MTG/essentia, src/algorithms/tonal/key.cpp), which also cites
-# the original sources. Krumhansl matches the app's constants.py.
+# the original sources. The app's constants.py uses bgate.
 PROFILES = {
     "krumhansl": (
         [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88],

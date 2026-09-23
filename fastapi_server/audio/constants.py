@@ -4,3 +4,6 @@ MAJOR_PROFILE = np.array([1.00, 0.00, 0.42, 0.00, 0.53, 0.37, 0.00, 0.77, 0.00, 
 MINOR_PROFILE = np.array([1.00, 0.00, 0.36, 0.39, 0.00, 0.38, 0.00, 0.74, 0.27, 0.00, 0.42, 0.23])
 
 NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+
+# harmonic_ratio at or above this is labelled tonal, below it noisy
+TONAL_THRESHOLD = 0.5
