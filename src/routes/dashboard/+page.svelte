@@ -1,5 +1,9 @@
 <script lang="ts">
 	let { data } = $props();
+
+	let recentSamples = $derived(data.recentSamples);
+
+	let collections = $derived(data.collections);
 </script>
 
 <div class="flex w-full flex-col">
@@ -17,11 +21,28 @@
 			<p class="text-7xl text-white">{data.sampleCount}</p>
 			<p class="text-sm tracking-wider text-white/50 uppercase">29.3GB</p>
 		</div>
-		<div class="col-span-4 flex flex-col gap-4 rounded-xl bg-blue-100 p-8">
-			<p class="text-sm tracking-wider text-white/50 uppercase">Recently Played</p>
+		<div class="col-span-4 flex flex-col rounded-xl bg-blue-100">
+			<div class="border-b border-white/50 p-4">
+				<p class="text-sm tracking-wider text-white/50 uppercase">Recently Played</p>
+			</div>
+			<div class="flex flex-col gap-1 p-4">
+				{#each recentSamples as sample (sample.id)}
+					<p class="font-light tracking-wider text-white">{sample.sampleName}</p>
+				{/each}
+			</div>
 		</div>
 		<div class="col-span-4 flex flex-col gap-4 rounded-xl bg-blue-100 p-8">
 			<p class="text-sm tracking-wider text-white/50 uppercase">Collections</p>
+			<div class="flex flex-wrap gap-2">
+				{#each collections as collection (collection.id)}
+					<button
+						style="--highlight: {collection.highlight}"
+						class="cursor-pointer rounded-full bg-(--highlight) px-4 py-2 text-xs text-white duration-200 hover:opacity-80"
+					>
+						{collection.name}
+					</button>
+				{/each}
+			</div>
 		</div>
 		<div class="col-span-4 flex flex-col gap-4 rounded-xl bg-blue-100 p-8">
 			<p class="text-sm tracking-wider text-white/50 uppercase">BPM</p>

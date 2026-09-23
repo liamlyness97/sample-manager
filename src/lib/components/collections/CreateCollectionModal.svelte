@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import type { SubmitFunction } from '@sveltejs/kit';
+	import { defaultColours } from '../defaults/colours.svelte';
 
 	let {
 		open = $bindable(false),
@@ -13,6 +14,8 @@
 	} = $props();
 
 	let dialog = $state<HTMLDivElement>();
+
+	let selectedColour: string | null | undefined = $state();
 
 	let error = $state<string | null>(null);
 	let submitting = $state(false);
@@ -115,15 +118,30 @@
 						placeholder="Enter a collection name"
 					/>
 				</label>
-				<label class="flex flex-col gap-1.5 text-sm">
+				<label class="flex flex-col gap-4 text-sm">
 					<span class="text-white/60">Highlight Colour</span>
 					<input
 						class="rounded-lg border border-white/15 bg-blue-300 px-3 py-2 text-white outline-none focus:border-white/40"
-						type="text"
+						type="hidden"
 						name="highlight"
 						id="highlight"
+						bind:value={selectedColour}
 						placeholder="Enter a highlight hex colour"
 					/>
+					<div class="grid grid-cols-12 gap-2">
+						{#each defaultColours as colour (colour.name)}
+							<button
+								aria-label="Select {colour.name}"
+								type="button"
+								onclick={() => (selectedColour = colour.colour)}
+								style="--highlight: {colour.colour}"
+								class="aspect-square w-full cursor-pointer rounded bg-(--highlight) duration-200 hover:opacity-80 {selectedColour ==
+								colour.colour
+									? 'ring'
+									: ''}"
+							></button>
+						{/each}
+					</div>
 				</label>
 				{#if error}
 					<p class="text-red-500">{error}</p>
