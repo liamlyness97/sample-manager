@@ -27,7 +27,7 @@ def estimate_key(y: np.ndarray, sr: int) -> str | None:
             best_key = NOTE_NAMES[i]
             best_mode = 'minor'
 
-        if best_key is None:
-            return None
+    if best_key is None:
+        return None
 
     return f"{best_key} {best_mode}"
