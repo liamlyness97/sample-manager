@@ -21,6 +21,8 @@ export const POST: RequestHandler = async ({ request }) => {
             sampleRate: librosaRes.sampleRate,
             duration: librosaRes.duration,
             estimatedKey: librosaRes.key,
+            harmonicRatio: librosaRes.harmonicRatio,
+            tonality: librosaRes.tonality,
             status: 'complete'
         })
         .where(eq(samples.id, sample.id))
