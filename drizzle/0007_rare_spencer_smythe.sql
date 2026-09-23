@@ -1,0 +1,1 @@
+ALTER TABLE "sample" RENAME COLUMN "harmonicRation" TO "harmonicRatio";

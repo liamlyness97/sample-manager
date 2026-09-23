@@ -18,6 +18,8 @@ export const samples = pgTable('sample', {
     duration: doublePrecision(),
     sampleRate: integer(),
     estimatedKey: text(),
+    harmonicRatio: doublePrecision(),
+    tonality: text(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
     lastPlayedAt: timestamp('last_played_at'),

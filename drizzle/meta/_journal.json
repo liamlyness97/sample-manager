@@ -43,6 +43,20 @@
       "when": 1789917886828,
       "tag": "0005_lively_ulik",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790167416087,
+      "tag": "0006_sharp_the_leader",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790167471478,
+      "tag": "0007_rare_spencer_smythe",
+      "breakpoints": true
     }
   ]
 }
