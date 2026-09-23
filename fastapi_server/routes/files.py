@@ -5,6 +5,7 @@ import numpy as np
 from pathlib import Path
 from fastapi import APIRouter, UploadFile
 from fastapi_server.audio.key_detection import estimate_key
+from fastapi_server.audio.harmonic_ratio import harmonic_ratio
 
 UPLOAD_DIR = Path(os.environ.get("UPLOAD_DIR", "../uploads"))
 
@@ -32,6 +33,17 @@ async def analyse_audio(user_id: str, filename: str):
     y, sr = librosa.load(UPLOAD_DIR / user_id / filename)
     tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
 
+    y_harmonic, y_percussive = librosa.effects.hpss(y)
+
+    harm_ratio = harmonic_ratio(y_harmonic, y_percussive)
+
+    if ratio >= 0.5:
+        tonality = 'tonal'
+    if ratio < 0.5:
+        tonality = 'noisy'
+    else:
+        tonality: 'n/a'
+
     duration = librosa.get_duration(y=y, sr=sr)
     key = estimate_key(y, sr)
 
@@ -39,7 +51,9 @@ async def analyse_audio(user_id: str, filename: str):
         "bpm": float(np.atleast_1d(tempo)[0]),
         "duration": float(duration),
         "sampleRate": int(sr),
-        "key": key
+        "key": key,
+        "harmonicRatio": ratio,
+        "tonality": tonality
     }
 
 @router.get("/test")
