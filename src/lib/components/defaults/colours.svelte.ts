@@ -1,4 +1,4 @@
-type Colour = {
+export type Colour = {
     name: string;
     colour: string
 }

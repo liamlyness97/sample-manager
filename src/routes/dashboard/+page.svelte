@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { keys } from '$lib/components/defaults/keys.svelte.js';
+
 	let { data } = $props();
 
 	let recentSamples = $derived(data.recentSamples);
@@ -49,6 +51,15 @@
 		</div>
 		<div class="col-span-4 flex flex-col gap-4 rounded-xl bg-blue-100 p-8">
 			<p class="text-sm tracking-wider text-white/50 uppercase">Key</p>
+			<div class="grid grid-cols-6 gap-1">
+				{#each keys as key, i (i)}
+					<button
+						class="cursor-pointer rounded bg-white/10 py-2 text-xs font-light text-white duration-200 hover:opacity-80"
+					>
+						{key.key} - {key.type}
+					</button>
+				{/each}
+			</div>
 		</div>
 	</div>
 </div>
