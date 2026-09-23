@@ -16,7 +16,7 @@ export const load: PageServerLoad = async ({params, locals}) => {
 		.where(eq(collections.id, params.collectionId))
 		.limit(1);
 
-	if (!collection) error(404, 'Collection not found');
+	if (!collection || collection.userId !== locals.user!.id) error(404, 'Collection not found');
 
 	const membership = await db
 		.select({ sampleId: collectionSamples.sampleId })
