@@ -45,7 +45,7 @@ async def analyse_audio(user_id: str, filename: str):
         tonality: 'n/a'
 
     duration = librosa.get_duration(y=y, sr=sr)
-    key = estimate_key(y_harmonic, sr)
+    key = estimate_key(y, sr)
 
     return {
         "bpm": float(np.atleast_1d(tempo)[0]),
