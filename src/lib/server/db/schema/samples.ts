@@ -26,6 +26,7 @@ export const samples = pgTable('sample', {
     playCount: integer('play_count').notNull().default(0),
     analysisVersion: integer('analysis_version'),
     analysedAt: timestamp('analysed_at'),
+    analysisError: text('analysis_error'),
     userId: text('user_id').notNull().references(() => user.id),
     typeId: text('type_id').references(() => sampleType.id),
     status: statusEnum('status').notNull().default('pending')
