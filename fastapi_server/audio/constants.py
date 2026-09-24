@@ -7,3 +7,4 @@ NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 
 # harmonic_ratio at or above this is labelled tonal, below it noisy
 TONAL_THRESHOLD = 0.5
+ANALYSIS_VERSION = 1
