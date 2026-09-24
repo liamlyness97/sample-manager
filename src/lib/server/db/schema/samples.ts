@@ -4,7 +4,7 @@ import { sampleType } from "./sampleType";
 import { relations } from "drizzle-orm";
 import { collectionSamples } from "./collectionSamples";
 
-export const statusEnum = pgEnum('status', ['pending', 'complete']);
+export const statusEnum = pgEnum('status', ['pending', 'processing', 'failed', 'complete']);
 
 export const samples = pgTable('sample', {
     id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -24,6 +24,8 @@ export const samples = pgTable('sample', {
     updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
     lastPlayedAt: timestamp('last_played_at'),
     playCount: integer('play_count').notNull().default(0),
+    analysisVersion: integer('analysis_version'),
+    analysedAt: timestamp('analysed_at'),
     userId: text('user_id').notNull().references(() => user.id),
     typeId: text('type_id').references(() => sampleType.id),
     status: statusEnum('status').notNull().default('pending')
