@@ -71,6 +71,13 @@
       "when": 1790251037779,
       "tag": "0009_curly_shiva",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790251316367,
+      "tag": "0010_concerned_reaper",
+      "breakpoints": true
     }
   ]
 }
