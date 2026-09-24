@@ -55,7 +55,7 @@ def analyse_audio(user_id: str, filename: str):
         "key": key,
         "harmonicRatio": harm_ratio,
         "tonality": tonality,
-        ANALYSIS_VERSION
+        "analysisVersion":  ANALYSIS_VERSION
     }
 
 
