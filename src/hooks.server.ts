@@ -1,6 +1,8 @@
 import { auth } from '$lib/auth/auth'
 import { svelteKitHandler } from 'better-auth/svelte-kit'
 import { building } from '$app/environment'
+import type { ServerInit } from '@sveltejs/kit';
+import { startAnalysisWorker } from '$lib/server/jobs';
 
 export async function handle({ event, resolve }) {
     const session = await auth.api.getSession({
@@ -13,4 +15,8 @@ export async function handle({ event, resolve }) {
     }
 
     return svelteKitHandler({ event, resolve, auth, building })
+}
+
+export const init: ServerInit = async () => {
+    await startAnalysisWorker()
 }
