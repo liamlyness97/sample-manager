@@ -6,6 +6,7 @@ declare global {
 }
 
 export const ANALYSIS_QUEUE = 'sample-analysis';
+export type AnalysisJobData = { sampleId: string };
 
 const queueOptions: Omit<Queue, 'name'> = {
     retryLimit: 5,
