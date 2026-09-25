@@ -28,6 +28,8 @@
 	let renameSamples = $state(false);
 	let deleteForm = $state<HTMLFormElement>();
 	let deleting = $state(false);
+	let reanalyseForm = $state<HTMLFormElement>();
+	let reanalysing = $state(false);
 
 	const typeNames = $derived(new Map(types.map((t) => [t.id, t.name])));
 
@@ -60,6 +62,14 @@
 			selectedSamples.length === 1 ? 'this sample' : `these ${selectedSamples.length} samples`;
 		if (!confirm(`Delete ${label}? This can't be undone.`)) return;
 		deleteForm?.requestSubmit();
+	}
+
+	function confirmReanalysis() {
+		if (selectedSamples.length === 0 || reanalysing) return;
+		const label =
+			selectedSamples.length === 1 ? 'this sample' : `these ${selectedSamples.length} samples`;
+		if (!confirm(`Re-Analyse ${label}`)) return;
+		reanalyseForm?.requestSubmit();
 	}
 </script>
 
@@ -115,11 +125,12 @@
 			out:fly={{ y: 50, duration: 200 }}
 			class="absolute right-0 bottom-20 left-0 mx-auto flex w-fit gap-4 rounded-full border border-blue-100 bg-blue-300 px-4 py-2 text-sm text-white"
 		>
-			<button class="cursor-pointer" onclick={() => (renameSamples = true)}>
-				Rename Sample
-			</button>
+			<button class="cursor-pointer" onclick={() => (renameSamples = true)}> Rename Sample </button>
 			<button class="cursor-pointer" onclick={() => (editCollection = true)}>
 				Edit Collection
+			</button>
+			<button class="cursor-pointer" disabled={reanalysing} onclick={confirmReanalysis}>
+				Re-Analyse
 			</button>
 			<button class="cursor-pointer text-red-500" disabled={deleting} onclick={confirmDelete}>
 				Delete Sample
@@ -142,6 +153,26 @@
 	onsuccess={() => invalidateAll()}
 	action="?/renameSamples"
 />
+
+<form
+	bind:this={reanalyseForm}
+	action="?/reanalyseSamples"
+	method="POST"
+	class="hidden"
+	use:enhance={() => {
+		reanalysing = true;
+		return async ({ result, update }) => {
+			if (result.type === 'success') {
+				selectedIds.clear();
+			}
+			await update();
+		};
+	}}
+>
+	{#each selectedSamples as sample (sample.id)}
+		<input type="hidden" name="sampleIds" value={sample.id} />
+	{/each}
+</form>
 
 <form
 	bind:this={deleteForm}
