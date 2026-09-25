@@ -313,7 +313,7 @@ The analysis route was run inside the container on three files: a generated 2-se
 - **`audio/constants.py`:** bgate `MAJOR_PROFILE` / `MINOR_PROFILE`, `NOTE_NAMES`, `TONAL_THRESHOLD = 0.5`.
 - **`routes/files.py` `analyse_audio`:** load → `beat_track` → `hpss` → `harmonic_ratio` → tonality (`None` / tonal / noisy) → duration → `estimate_key(y, sr)`. Returns `bpm, duration, sampleRate, key, harmonicRatio, tonality`, and any of `key`, `harmonicRatio` and `tonality` can be null.
 - **`scripts/evaluate_keys.py` + `key-samples/manifest.csv`:** the key test setup (40 labelled samples; audio not committed).
-- **Repo layout:** `fast-api/` is its **own git repository**, and the parent repo ignores it via `.gitignore`. Python history for this work: `d1e785d`, `d2cbeab`, `c890aa7`, `cce33f8`, `f5c4edb`, `5e14cf5`, `779782a`. The SvelteKit/Drizzle side is in the parent repo (PR #7).
+- **Repo layout (at the time):** `fast-api/` was its **own git repository**, ignored by the parent via `.gitignore`. On 2026-09-25 it was merged into the main repo with `git subtree add` (history kept; a committed 17 MB `uploads/` audio file was stripped from its history first), so the whole project now lives in one repo. Python history for this work: `d1e785d`, `d2cbeab`, `c890aa7`, `cce33f8`, `f5c4edb`, `5e14cf5`, `779782a`. The SvelteKit/Drizzle side is in the parent repo (PR #7).
 
 ## Part 5: Security fixes and a job queue for analysis (2026-09-23 → 2026-09-25)
 
