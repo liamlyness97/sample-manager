@@ -169,6 +169,38 @@ export const actions = {
 
         return { success: true };
     },
+    reanalyseSamples: async ({request, locals}) => {
+        const data = await request.formData();
+
+        const sampleIds = [
+            ...new Set(data.getAll('sampleIds').filter((v): v is string => typeof v === 'string'))
+        ]
+
+        if (sampleIds.length === 0) {
+            return fail(400, { error: 'No samples selected' })
+        }
+
+        const ownedSamples = await db
+            .select({id: samples.id, sampleUrl: samples.sampleUrl})
+            .from(samples)
+            .where(and(inArray(samples.id, sampleIds), eq(samples.userId, locals.user!.id)));
+        const ownedSampleIds = ownedSamples.map((s) => s.id);
+
+        if (ownedSampleIds.length === 0) {
+            return fail(403, { error: 'Not authorised to re-analyse these samples' })
+        }
+
+        for (const sampleId of ownedSampleIds) {
+            
+            await db.transaction(async (tx) => {
+                await enqueueAnalysis(sampleId, tx)
+            })
+            
+        }
+
+        return { success: true }
+
+    },
     deleteSamples: async ({ request, locals }) => {
         const data = await request.formData();
 
@@ -186,7 +218,7 @@ export const actions = {
             .where(and(inArray(samples.id, sampleIds), eq(samples.userId, locals.user!.id)));
 
         if (ownedSamples.length === 0) {
-            return fail(403, { error: 'Not authorized to delete these samples' });
+            return fail(403, { error: 'Not authorised to delete these samples' });
         }
 
         await db.delete(samples).where(inArray(samples.id, ownedSamples.map((s) => s.id)));
