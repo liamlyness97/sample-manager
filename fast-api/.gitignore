@@ -4,3 +4,7 @@ __pycache__/
 # Key detection test set: commit the manifest, not the audio or generated results
 key-samples/*
 !key-samples/manifest.csv
+
+# Local Python environment and scratch audio
+.venv/
+uploads/
