@@ -7,7 +7,6 @@ import { eq } from "drizzle-orm";
 
 export const POST: RequestHandler = async ({ request }) => {
     const { sample, filename } = await request.json()
-
     
     const librosa = await fetch(`${env.FASTAPI_URL}/files/analyse/${sample.userId}/${filename}`)
     
@@ -27,8 +26,6 @@ export const POST: RequestHandler = async ({ request }) => {
         })
         .where(eq(samples.id, sample.id))
         .returning()
-
-    console.log(sampleUpdate)
 
 
    return json({ success: true })

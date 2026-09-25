@@ -1,5 +1,5 @@
-import type { JobWithMetadata } from 'pg-boss';
-import { ANALYSIS_QUEUE, getBoss, type AnalysisJobData } from "./boss";
+import { ANALYSIS_QUEUE, getBoss } from "./boss";
+import { analyseSample } from './analyseSample';
 
 declare global {
     var __sampleManagerAnalysisWorker: Promise<string> | undefined
@@ -11,11 +11,7 @@ async function registerWorker() {
     return boss.work(
         ANALYSIS_QUEUE,
         { includeMetadata: true, localConcurrency: 3 },
-        async ([job]: JobWithMetadata<AnalysisJobData>[]) => {
-            console.log(
-                `[analysis] job ${job.id} (attempt ${job.retryCount + 1}) sample ${job.data.sampleId}`
-            )
-        }
+        analyseSample
     );
 }
 
