@@ -1,11 +1,12 @@
-# Dev log: Collections, library UI, harmonic analysis and key detection (2026-09-19 → 2026-09-23)
+# Dev log: Collections, library UI, audio analysis and a job queue (2026-09-19 → 2026-09-25)
 
-Source notes for a blog post. Covers the Sample Manager work from the start of the collections feature (`b074c8e`, 2026-09-19) up to 2026-09-23:
+Source notes for a blog post. Covers the Sample Manager work from the start of the collections feature (`b074c8e`, 2026-09-19) up to 2026-09-25:
 - **Part A:** building collections (commits `b074c8e` → `e927f19`).
 - **Part 0:** further SvelteKit UI work (commits `6bb60fc` → `a554ea7`, plus the SvelteKit side of `e4d13b7`).
 - **Parts 1–2:** a mentored session on audio analysis in the FastAPI/librosa service: the harmonic/percussive ratio, then first attempts at better key detection.
 - **Part 3:** building a labelled key detection test set and scoring script, and what three rounds of results showed.
 - **Part 4:** implementing the changes the results pointed to, a tonality bug and a silent-file bug found by testing, and the final state of the code (`fast-api` commits `cce33f8` → `779782a`).
+- **Part 5:** closing two ownership gaps, then rebuilding the analysis pipeline around a Postgres-backed job queue (pg-boss). Branch `rewrite-upload-flow`, commits `e14c874` → `d09aeea`, plus `fast-api` `9835a6f` and `50f786d`.
 
 ## Context
 
@@ -52,10 +53,10 @@ Collections are user-defined groups of samples (e.g. "Rollers", "Neuro basses"),
   - Later replaced with a relational `findMany` so samples carry their collections (see Part 0). That change **dropped the `addedAt` ordering**, even though the page still says "sorted by recently added".
 - Reuses the shared `SampleList` component, so playback, selection and the play queue all work inside a collection.
 
-### Collections loose ends (still present in the current code)
-- **Ownership gaps:**
-  - The `upload` action validates requested collection ids by existence only (no `userId` filter), so a crafted request could attach a sample to another user's collection. The later bulk-edit action does check ownership.
-  - The detail route loads the collection by id without checking `userId`. Other users' samples are filtered out, but the collection's name and colour are visible to anyone who has its id.
+### Collections loose ends
+- **Ownership gaps (fixed in Part 5):**
+  - The `upload` action validated requested collection ids by existence only (no `userId` filter), so a crafted request could attach a sample to another user's collection. The later bulk-edit action did check ownership.
+  - The detail route loaded the collection by id without checking `userId`. Other users' samples were filtered out, but the collection's name and colour were visible to anyone who had its id.
 - **Collections page:**
   - The card's "142 samples" is a hard-coded placeholder.
   - `{#if data.collectionsList}` is always truthy (an empty array is truthy), so the "No collections found" state never shows.
@@ -314,15 +315,153 @@ The analysis route was run inside the container on three files: a generated 2-se
 - **`scripts/evaluate_keys.py` + `key-samples/manifest.csv`:** the key test setup (40 labelled samples; audio not committed).
 - **Repo layout:** `fast-api/` is its **own git repository**, and the parent repo ignores it via `.gitignore`. Python history for this work: `d1e785d`, `d2cbeab`, `c890aa7`, `cce33f8`, `f5c4edb`, `5e14cf5`, `779782a`. The SvelteKit/Drizzle side is in the parent repo (PR #7).
 
+## Part 5: Security fixes and a job queue for analysis (2026-09-23 → 2026-09-25)
+
+Work on branch `rewrite-upload-flow`. As before, the developer wrote the code and the assistant guided and reviewed it. The assistant wrote a few pieces at the developer's request, and those are noted where they happen.
+
+### Closing two ownership gaps (`e14c874`, `9fd669b`, `e7a4d42`)
+- **Upload action:** requested collection ids are now filtered with `eq(collections.userId, locals.user.id)`.
+  - The first attempt copied the condition from elsewhere with `samples.userId` in a query that only reads `collections`. TypeScript accepted it, because both columns exist. Postgres rejected it at runtime: `missing FROM-clause entry for table "sample"`. Uploads *with* a collection selected would have returned a 500, while uploads without one kept working, so it was easy to miss.
+  - Git showed the broken version staged (`MM`) and the fix unstaged, so the file had to be re-added before committing.
+- **Collection detail route:**
+  - The first attempt checked ownership *before* checking that the collection existed. A missing id then crashed with a `TypeError` on `undefined.userId` (a 500) instead of returning a 404.
+  - The final version is one line: `if (!collection || collection.userId !== locals.user.id) error(404, …)`. `||` short-circuits, so `.userId` is never read on `undefined`.
+- **403 vs 404:** the developer first chose 403. The final choice was **404 for both "missing" and "not yours"**, because a 403 confirms the id exists. That's the same convention GitHub uses for private repositories. (With random UUIDs the practical risk is low, but the 404 costs nothing.)
+
+### Rethinking how analysis runs
+Designing a "re-analyse" feature and a `failed` status exposed several problems with the existing flow (upload action → `await fetch('/api/analysis')` → `await fetch(FastAPI)` → update row):
+1. **Failures disappeared.** The upload ignored the analysis response, so a FastAPI error left the row `pending` forever while the upload reported success.
+2. **Uploads waited for the whole analysis.** HPSS on a 44-second pad takes seconds.
+3. **`/api/analysis` had no authentication.** It trusted `{ sample, filename }` from the request body, so anyone could trigger analysis or overwrite any sample's results.
+4. **FastAPI could only analyse one file at a time.** `analyse_audio` was `async def` but did blocking, CPU-heavy librosa work, which stalled FastAPI's event loop. Switching it to `def` makes FastAPI run it in a threadpool.
+5. **Nothing recorded which algorithm version produced a row**, so after the key-detection change nothing could tell which rows were stale.
+
+**Decision: build a real job queue now.** The earlier decision (2026-09-18) had been to defer queue infrastructure until there was more than one background workload. The developer reversed it: deferring would mean rewriting more of the pipeline later. A second constraint: **all database access stays in SvelteKit/Drizzle**, and FastAPI stays a stateless function (file in, numbers out).
+
+**Why pg-boss, not Redis/BullMQ:**
+- It runs on the existing Postgres, so there's no new service to operate.
+- Redis can lose queued jobs, depending on its persistence settings.
+- Most importantly, **job state and sample state can be written atomically**. With Redis, "insert the row" (Postgres) and "enqueue the job" (Redis) can't share a transaction. A crash between them leaves a `pending` row that nothing will ever process.
+- To keep the choice reversible, the queue sits behind a small module (`src/lib/server/jobs/`) that exposes only a few functions.
+
+**pg-boss's Drizzle adapter:** the developer found `fromDrizzle(tx, sql)` in the pg-boss docs (v12). It lets `boss.send()` run *inside* a Drizzle transaction, so the sample insert and its job commit or roll back together. The assistant checked its source to confirm the scope. It does **not** make pg-boss's tables part of the Drizzle schema, and the worker still uses pg-boss's own connection.
+
+### Stage 0: FastAPI (`fast-api` `9835a6f`, `50f786d`)
+- `analyse_audio` changed from `async def` to `def`.
+- It returns `analysisVersion` from `ANALYSIS_VERSION = 1` in `constants.py`. It starts at 1, not 0, because `0` is falsy in JavaScript, so a check like `if (!sample.analysisVersion)` would treat it as "never analysed".
+- The unused `/files/test` routes were removed. The old `/files/upload` route was kept and switched to `def`. It still has no auth, takes its filename from the client, and FastAPI's port 8000 is exposed to the host in both compose files; all three were flagged as risks.
+
+### Stage 1: schema (`f04192e`, `4e5c087`, `72b26ec`, `43e8640`)
+- `statusEnum`: `pending | processing | failed | complete`, added with `ALTER TYPE … ADD VALUE`.
+- New nullable columns: `analysis_version`, `analysed_at`, `analysis_error`.
+- **`schemaFilter: ['public']` in `drizzle.config.ts`**, so drizzle-kit ignores pg-boss's `pgboss` schema. After pg-boss created its tables (`pg-boss create` via its CLI; `start()` does the same automatically), `pnpm db:push` reported no changes, which proved the filter worked.
+- `43e8640` gave every analysis column an explicit snake_case database name (`sample_bpm`, `estimated_key`, `harmonic_ratio`, …). That resolved the mixed naming noted in the backlog.
+
+### Stage 2: the jobs module (`4ab43e6`, `505d50a`)
+```
+src/lib/server/jobs/
+  boss.ts               getBoss(), ANALYSIS_QUEUE = 'sample-analysis', AnalysisJobData
+  enqueueAnalysis.ts    enqueueAnalysis(sampleId, tx?)
+  startAnalysisWorker.ts
+  analyseSample.ts      the job handler (Stage 3)
+  stopJobs.ts
+  index.ts              re-exports only enqueueAnalysis, startAnalysisWorker, stopJobs
+```
+**`boss.ts`:**
+- The `'error'` listener is registered **before** `start()`. Without one, Node treats an emitted `'error'` as unhandled and exits the whole SvelteKit process.
+- **`createQueue` doesn't update an existing queue.** Reading pg-boss's source showed it inserts with `ON CONFLICT DO NOTHING`, so changing `retryLimit` in code would silently not apply. `updateQueue` is called straight after with the same options object.
+- Queue options: `retryLimit: 5`, `retryDelay: 10`, `retryBackoff: true`, `expireInSeconds: 240` (the default is 15 minutes), `notify: true` (LISTEN/NOTIFY, so jobs are picked up in milliseconds instead of on a 2-second poll).
+  - `notify` belongs to pg-boss's `Queue` type, not `QueueOptions`, so the options are typed as `Omit<Queue, 'name'>`, which satisfies both `createQueue` and `updateQueue`.
+- **The singleton caches the *promise* on `globalThis`:** `globalThis.__sampleManagerBoss ??= createBoss()`, with the cache cleared if startup fails.
+  - A promise, so two callers arriving at the same moment share one start.
+  - `globalThis`, because Vite's hot reload re-runs modules in dev and resets module-level variables.
+  - Cleared on failure, so a start that failed while Postgres was down can be retried.
+  - Explained along the way: `declare global { var … }` is TypeScript-only and removed at compile time. `globalThis` and the promise behaviour are plain JavaScript. Vite is only the *reason* it's needed.
+- **Bugs caught in review:**
+  - `createBoss` initially ended with `return createBoss()`, **calling itself**: infinite recursion, a new pg-boss (and new connections) on every call, and a promise that never resolved.
+  - A later version ended in a bare `return`, typed as `Promise<void>`, which the compiler caught.
+  - The saved file once differed from the pasted code, so it was checked with `tsc` rather than trusting the paste.
+
+**`enqueueAnalysis(sampleId, tx?)`:**
+- `send` must be **awaited**. Unawaited, a transaction can commit before `send` runs, which breaks the atomicity the transaction exists for.
+- `{ db: fromDrizzle(tx, sql) }` is added only when `tx` is given. TypeScript rejected an unconditional call because `tx` may be `undefined`.
+- **The `Transaction` type** is exported from `src/lib/server/db/index.ts` (not the schema folder, because drizzle-kit reads that folder, and importing `db` from it would create a circular import) as `Parameters<Parameters<typeof db.transaction>[0]>[0]`, meaning "the type of the callback's first parameter". It was checked to be equivalent to `NodePgTransaction<…>`.
+- Job data is typed as `AnalysisJobData`, checked with `satisfies`.
+
+**`startAnalysisWorker()`:**
+- `work()` has two overloads, `(name, handler)` and `(name, options, handler)`. Passing only options made TypeScript match the first overload and report `'includeMetadata' does not exist in type 'WorkHandler'`, so the real problem, a missing handler, looked like a bad option.
+- **A handler copied from the docs' `perJobResults` example** returned `{ status: 'failed' }` objects. Without `perJobResults: true`, pg-boss treats any return as success and saves the returned value, so that pattern **silently marks failed jobs as completed**. It also referenced an undefined `output` variable. The rule in the default mode: **return = completed, throw = failed and retried.**
+- **A typing trap (found by the assistant while checking types):** `boss.work<AnalysisJobData>(…)` breaks the metadata types. Once some type arguments are passed explicitly, TypeScript stops inferring the rest, so the options type fell back to `WorkOptions` and lost the literal `includeMetadata: true`. The fix is to annotate the handler's parameter instead: `async ([job]: JobWithMetadata<AnalysisJobData>[]) => …`.
+- A second `globalThis` guard (`__sampleManagerAnalysisWorker`), because every call to `work()` adds another worker.
+- **Passing the handler:** `work(queue, opts, analyseSample([job]))` *called* the function at setup time, with an undefined `job`, and passed its promise. The fix is `work(queue, opts, analyseSample)`, a reference pg-boss calls for each job. This led to an explanation of functions as values: `fn` vs `fn()`, like `setTimeout(greet, 1000)` vs `setTimeout(greet(), 1000)`.
+
+**First end-to-end test:** a throwaway route enqueued `'test-sample'`. The worker logged it, and `pgboss.job` showed `completed` about 1.2 s after creation, almost all of that the cold `getBoss()` start.
+
+### Stage 4: worker lifecycle (`0f71e9f`, `bce50fc`)
+- `hooks.server.ts` **`init`** starts the worker once when the server starts, and returns early when `building`, because the Docker build stage has no database.
+- **Shutdown:** `process.on('sveltekit:shutdown', …)` calls `stopJobs()`. The adapter-node docs say this event fires after the HTTP server has closed its connections, and supports async cleanup. It only fires under adapter-node (`node build`), not in `pnpm dev`.
+- **`stopJobs()` (written by the assistant at the developer's request):**
+  - it does nothing if pg-boss was never started. The first version called `getBoss()`, which would have *started* pg-boss just to stop it.
+  - it clears both caches, then calls `boss.stop({ graceful: true })`.
+  - It's named for what it does: it stops all of pg-boss, not just one worker.
+- The worker guard's `.catch` originally rethrew without clearing the cache, so a failed start would have stayed cached forever.
+
+### Side fix: `App.Locals` was never declared (`f288782`)
+- Typing `handle` with SvelteKit's `Handle` type revealed that `src/app.d.ts` never declared `App.Locals`. About 35 `Property 'user' does not exist on type 'Locals'` errors already existed across the app.
+- `user` and `session` are now declared from `typeof auth.$Infer.Session`, better-auth's own types. They're **optional**, because `handle` only sets them for logged-in requests.
+- Type errors went from 39 to 5.
+- The same fix uncovered a real bug that the other errors had been hiding: `fileSize: \`${file.size}\`` put a string into an integer column. Postgres converted it silently, so it worked at runtime.
+
+### Stage 3: the handler (`35ef42f`, `d09aeea`)
+`analyseSample.ts`:
+1. Load the row by `job.data.sampleId`. **If it's gone, warn and return** (don't throw), because retrying can't bring back a deleted row.
+2. `status: 'processing'`.
+3. `posix.basename(sample.sampleUrl)` gives the filename FastAPI needs. The path is looked up from the row in the handler, not copied into the job, so jobs stay `{ sampleId }` and re-analyse needs no upload context.
+4. Call FastAPI with Node's global `fetch` and `$env/dynamic/private` (there's no request, so no `event.fetch`). If the response isn't OK, `throw new Error(\`FastAPI analysis failed for sample ${id}: ${status} ${body.slice(0, 200)}\`)`. The body is read with `.text()`, because error bodies aren't always JSON.
+5. Write the results plus `analysisVersion`, `analysedAt` and `analysisError: null`, with `status: 'complete'`.
+- SvelteKit's `error()` was replaced with `throw new Error` / `return`: `error()` exists to build HTTP responses, and a worker isn't handling a request.
+- **Failure handling:**
+  - **How pg-boss counts attempts (checked in its SQL):** `retryCount` starts at 0, and the job is retried while `retry_count < retry_limit`. With `retryLimit: 5` there are 6 attempts, and the last one has `retryCount === retryLimit`.
+  - The job's metadata carries its own `retryLimit`, so `isFinalAttempt = job.retryCount >= job.retryLimit` needs nothing shared from `boss.ts`.
+  - The `catch` records the error in `analysisError`, sets `failed` on the final attempt and `pending` otherwise (the job is waiting in the queue, not being processed), and **always rethrows**, because a swallowed error would mark the job completed.
+  - The update inside the `catch` has its own `try/catch`, so a database failure there can't replace the original error. (The `catch` block was written by the assistant at the developer's request.)
+
+### Stage 5: uploads go through the queue (`68f25b5`, `4080f6c`)
+The upload action, in order:
+1. **Checks and reads that can reject the upload**, before anything touches the disk.
+2. **Write the file.**
+3. **One `db.transaction`:** `tx.insert(samples)`, `tx.insert(collectionSamples)`, `await enqueueAnalysis(id, tx)`. Everything inside uses `tx`.
+4. **If the transaction fails, `unlink` the file**, because a database rollback can't undo a disk write. The `try/catch` wraps the whole `db.transaction(...)` call, not the inside of the callback, so it also catches a failed *commit*.
+
+Review caught two bugs: `enqueueAnalysis` wasn't awaited, and the file check (`file.size < 0`) could never be true. `/api/analysis` was deleted, which also closed the unauthenticated endpoint.
+
+### The "stuck pending" bug
+The first real uploads stayed `pending`, yet their jobs were `completed` in **about 5 ms**, too fast for any real analysis.
+- **Cause:** the `pnpm dev` server had been running since before the jobs code existed. The worker had been registered with the old logging-only handler and cached on `globalThis`. When the handler changed, hot reload re-ran the module, but the guard (working as designed) skipped re-registering. pg-boss kept calling the old function.
+- **Fix:** restart the dev server. **Lesson: the singleton guard means changes to worker code only take effect after a dev-server restart.** `import.meta.hot.dispose` could automate this later.
+- **After the restart:** uploads went `pending → processing → complete` with `analysis_version = 1`. The first job took about 29 s and the next about 0.3 s. That's almost certainly librosa compiling some of its functions on first use (via numba) inside a freshly started FastAPI, so there will be one slow job after each FastAPI restart.
+
+### State at the end of this part
+- Uploads return immediately. Analysis runs in the background with retries and backoff, and failures are recorded on the row.
+- **The failure path has not been exercised yet:** no job has failed so far. The suggested test is to stop FastAPI, temporarily lower `retryLimit`, restart dev, upload, and expect `pending` with `fetch failed` recorded, then `failed`.
+
 ## Open issues / backlog
 
+- **Re-analyse + status in the UI (the next piece of work, on a new branch):**
+  - a re-analyse action (per sample, bulk, and "everything stale", meaning `analysis_version` null or below the current version)
+  - showing `pending` / `processing` / `failed` in the list
+  - refreshing while jobs run
+  - the `BURROAK_BREAK_07` row stuck in `pending` from the stale-handler bug.
+- **A sweep for rows stuck in `processing`:** if the server dies mid-job, the handler's `catch` never runs. pg-boss expires and retries the job after 240 s, but the row says `processing` until then.
+- **Upload file check:** `if (!file)` rejects a missing file but not an empty one or a text field. `!(file instanceof File) || file.size === 0` covers all three. Its `fail()` should use the `{ error }` shape the modals read.
+- **Worker code in dev:** restart after changing `src/lib/server/jobs/`, or add an `import.meta.hot.dispose` hook.
+- **FastAPI:** the `/files/upload` route (no auth, client-supplied filename), and port 8000 exposed in the base `docker-compose.yml`.
 - **Camelot display and filtering** in the dashboard, where relative keys match. It needs the key format normalised first: the UI uses `'C#' + 'Min'/'Maj'`, while the API returns `"C# minor"` or `null`.
-- **Half-time BPM:** `beat_track` reported 86 BPM for a 174 BPM arp during testing. That's a common octave error for drum & bass tempos; consider a tempo prior or doubling below a threshold.
-- **Failed analysis leaves rows stuck in `pending`** with nulls and no error recorded (seen when a syntax error crashed analysis for three uploads). Consider a `'failed'` value in `statusEnum`.
-- **Re-analyse action**: old rows have null `harmonicRatio`/`tonality`. This will recur each time the analysis improves.
+- **Half-time BPM:** `beat_track` reports 86 or 117 BPM for 172 BPM material. That's a common octave error for drum & bass tempos; consider a tempo prior or doubling below a threshold.
+- **Remaining type errors:** `src/routes/api/auth/[...all]/+server.ts` (how it calls `svelteKitHandler`).
 - Duplicate uploads are allowed (currently just leftover test rows).
 - `librosa` / `numpy` aren't listed in `fast-api/pyproject.toml` dependencies.
-- The Drizzle schema mixes explicit snake_case column names with implicit camelCase ones.
+- Collections page and create-action loose ends (see Part A).
 
 ## Planned next steps
 
