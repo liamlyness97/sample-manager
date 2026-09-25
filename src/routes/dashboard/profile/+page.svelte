@@ -1,7 +1,5 @@
 <script lang="ts">
 	let { data } = $props();
-	$inspect(data.user);
-	$inspect(data.session);
 </script>
 
 <div class="flex h-full w-full justify-center">
