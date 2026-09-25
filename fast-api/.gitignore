@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+
+# Key detection test set: commit the manifest, not the audio or generated results
+key-samples/*
+!key-samples/manifest.csv
