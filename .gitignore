@@ -25,7 +25,6 @@ vite.config.ts.timestamp-*
 test-results
 # SQLite
 *.db
-/fast-api
 
 # Uploads
 /uploads

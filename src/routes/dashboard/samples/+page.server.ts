@@ -1,4 +1,4 @@
-import { dirname, extname } from "path";
+import { extname } from "path";
 import type { Actions, PageServerLoad } from "./$types";
 import { unlink, writeFile } from "fs/promises";
 import { mkdirSync } from "fs";
@@ -6,10 +6,10 @@ import { db } from "$lib/server/db";
 import { samples } from "$lib/server/db/schema/samples";
 import { and, eq, inArray } from "drizzle-orm";
 import { sampleType } from "$lib/server/db/schema/sampleType";
-import { env } from "$env/dynamic/private"
 import { collections } from "$lib/server/db/schema/collections";
 import { fail } from "@sveltejs/kit";
 import { collectionSamples } from "$lib/server/db/schema/collectionSamples";
+import { enqueueAnalysis } from "$lib/server/jobs";
 
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -21,10 +21,9 @@ export const load: PageServerLoad = async ({ locals }) => {
             }
         }
     })
+    
     const sampleTypes = await db.select().from(sampleType).where(eq(sampleType.userId, locals.user!.id))
     const collectionsList = await db.select().from(collections).where(eq(collections.userId, locals.user!.id))
-
-
 
     return {
         samples: sampleList,
@@ -34,11 +33,15 @@ export const load: PageServerLoad = async ({ locals }) => {
 }
 
 export const actions = {
-    upload: async ({ request, locals, fetch }) => {
+    upload: async ({ request, locals }) => {
         const data = await request.formData();
         const file = data.get('file') as File;
         const peaks = data.get('peaks') as string;
         const sampleType = data.get('sampleType') as string;
+
+        if (!(file instanceof File) || file.size === 0) {
+            return fail(400, {error: 'No file was present'});
+        }
 
         const requested = [
             ...new Set(data.getAll('collectionIds').filter((v): v is string => typeof v === 'string'))
@@ -48,7 +51,7 @@ export const actions = {
             await db.select({ id: collections.id }).from(collections).where(and(inArray(collections.id, requested), eq(collections.userId, locals.user!.id)))
         ).map((r) => r.id) : []
 
-        const sampleName = file?.name;
+        const sampleName = file.name;
         const filepath = `uploads/${locals.user!.id}`;
         const uploadFileName = `${crypto.randomUUID()}${extname(file.name.replace(/ /g, ''))}`;
         const filename = `${filepath}/${uploadFileName}`;
@@ -56,38 +59,35 @@ export const actions = {
         mkdirSync(filepath, { recursive: true });
         await writeFile(filename, Buffer.from(await file.arrayBuffer()));
 
-       
+        try {
+            await db.transaction(async (tx) => {
+                // Adds sample entry into the database
+                const [newSample] = await tx.insert(samples).values({
+                    sampleName: sampleName,
+                    sampleUrl: filename,
+                    sampleFormat: file.type,
+                    sampleFolder: filepath,
+                    fileSize: file.size,
+                    userId: locals.user!.id,
+                    peaks: peaks,
+                    typeId: sampleType === 'none' ? null : sampleType,
+                    status: 'pending'
+                }).returning({ id: samples.id });
 
-        const [newSample] = await db.insert(samples).values({
-            sampleName: sampleName,
-            sampleUrl: filename,
-            sampleFormat: file.type,
-            sampleFolder: filepath,
-            fileSize: `${file.size}`,
-            userId: locals.user!.id,
-            peaks: peaks,
-            typeId: sampleType === 'none' ? null : sampleType,
-            status: 'pending'
-        }).returning({ id: samples.id, userId: samples.userId, });
+                if (validIds.length > 0) {
+                    await tx.insert(collectionSamples).values(validIds.map((collectionId) => ({
+                        collectionId, sampleId: newSample.id
+                    }))).onConflictDoNothing();
+                }
 
-        // Testing the pass off to FastAPI
-        /*
-        const fastApiTest = await fetch(`${env.FASTAPI_URL}/files/test/${locals.user!.id}/${uploadFileName}`);
-        const fastApiRes = await fastApiTest.json()
-        console.log(fastApiRes)
-        */
-
-        if (validIds.length > 0) {
-            await db.insert(collectionSamples).values(validIds.map((collectionId) => ({
-                collectionId, sampleId: newSample.id
-            }))).onConflictDoNothing();
+                await enqueueAnalysis(newSample.id, tx);
+            })
+        } catch (err) {
+            await unlink(filename).catch((unlinkErr) => {
+                console.error('Failed to clean up orphaned upload', filename, unlinkErr);
+            })
+            throw err
         }
-
-        const analysis = await fetch('/api/analysis', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({sample: newSample, filename: uploadFileName})
-        })
 
         return { success: true };
     },
