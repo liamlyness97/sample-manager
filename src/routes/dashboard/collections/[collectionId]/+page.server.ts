@@ -6,6 +6,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import type { Actions, PageServerLoad } from "./$types";
 import { error, fail } from "@sveltejs/kit";
 import { collections } from "$lib/server/db/schema/collections";
+import { reanalyseSamples } from "$lib/server/actions/reanalyseSamples";
 
 export const load: PageServerLoad = async ({params, locals}) => {
     if (!locals.user) error(401, 'Not signed in');
@@ -40,6 +41,7 @@ export const load: PageServerLoad = async ({params, locals}) => {
 }
 
 export const actions = {
+	reanalyseSamples,
 	editSampleCollection: async ({ request, locals }) => {
 		const data = await request.formData();
 

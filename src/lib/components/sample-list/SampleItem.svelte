@@ -19,7 +19,7 @@
 	const progress = $derived(isActive ? player.state.progress : 0);
 
 	let roundedBpm: number = $derived(Math.round(sample.sampleBpm ?? 0));
-	let formattedDuration: number = $derived(Number(sample.duration?.toFixed(2)));
+	let formattedDuration = $derived(sample.duration?.toFixed(2));
 </script>
 
 <div
