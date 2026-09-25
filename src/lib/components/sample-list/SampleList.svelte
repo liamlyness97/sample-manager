@@ -68,7 +68,7 @@
 		if (selectedSamples.length === 0 || reanalysing) return;
 		const label =
 			selectedSamples.length === 1 ? 'this sample' : `these ${selectedSamples.length} samples`;
-		if (!confirm(`Re-Analyse ${label}`)) return;
+		if (!confirm(`Re-analyse ${label}?`)) return;
 		reanalyseForm?.requestSubmit();
 	}
 </script>
@@ -162,6 +162,7 @@
 	use:enhance={() => {
 		reanalysing = true;
 		return async ({ result, update }) => {
+			reanalysing = false;
 			if (result.type === 'success') {
 				selectedIds.clear();
 			}

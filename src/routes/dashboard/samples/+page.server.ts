@@ -10,6 +10,7 @@ import { collections } from "$lib/server/db/schema/collections";
 import { fail } from "@sveltejs/kit";
 import { collectionSamples } from "$lib/server/db/schema/collectionSamples";
 import { enqueueAnalysis } from "$lib/server/jobs";
+import { reanalyseSamples } from "$lib/server/actions/reanalyseSamples";
 
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -169,38 +170,7 @@ export const actions = {
 
         return { success: true };
     },
-    reanalyseSamples: async ({request, locals}) => {
-        const data = await request.formData();
-
-        const sampleIds = [
-            ...new Set(data.getAll('sampleIds').filter((v): v is string => typeof v === 'string'))
-        ]
-
-        if (sampleIds.length === 0) {
-            return fail(400, { error: 'No samples selected' })
-        }
-
-        const ownedSamples = await db
-            .select({id: samples.id, sampleUrl: samples.sampleUrl})
-            .from(samples)
-            .where(and(inArray(samples.id, sampleIds), eq(samples.userId, locals.user!.id)));
-        const ownedSampleIds = ownedSamples.map((s) => s.id);
-
-        if (ownedSampleIds.length === 0) {
-            return fail(403, { error: 'Not authorised to re-analyse these samples' })
-        }
-
-        for (const sampleId of ownedSampleIds) {
-            
-            await db.transaction(async (tx) => {
-                await enqueueAnalysis(sampleId, tx)
-            })
-            
-        }
-
-        return { success: true }
-
-    },
+    reanalyseSamples,
     deleteSamples: async ({ request, locals }) => {
         const data = await request.formData();
 
