@@ -1,4 +1,4 @@
-import { dirname, extname } from "path";
+import { extname } from "path";
 import type { Actions, PageServerLoad } from "./$types";
 import { unlink, writeFile } from "fs/promises";
 import { mkdirSync } from "fs";
@@ -21,10 +21,9 @@ export const load: PageServerLoad = async ({ locals }) => {
             }
         }
     })
+    
     const sampleTypes = await db.select().from(sampleType).where(eq(sampleType.userId, locals.user!.id))
     const collectionsList = await db.select().from(collections).where(eq(collections.userId, locals.user!.id))
-
-
 
     return {
         samples: sampleList,
@@ -40,7 +39,9 @@ export const actions = {
         const peaks = data.get('peaks') as string;
         const sampleType = data.get('sampleType') as string;
 
-        if (!file) return fail(400, 'No file was present');
+        if (!(file instanceof File) || file.size === 0) {
+            return fail(400, {error: 'No file was present'});
+        }
 
         const requested = [
             ...new Set(data.getAll('collectionIds').filter((v): v is string => typeof v === 'string'))
@@ -60,30 +61,30 @@ export const actions = {
 
         try {
             await db.transaction(async (tx) => {
-                    // Adds sample entry into the database
-                    const [newSample] = await tx.insert(samples).values({
-                        sampleName: sampleName,
-                        sampleUrl: filename,
-                        sampleFormat: file.type,
-                        sampleFolder: filepath,
-                        fileSize: file.size,
-                        userId: locals.user!.id,
-                        peaks: peaks,
-                        typeId: sampleType === 'none' ? null : sampleType,
-                        status: 'pending'
-                    }).returning({ id: samples.id });
+                // Adds sample entry into the database
+                const [newSample] = await tx.insert(samples).values({
+                    sampleName: sampleName,
+                    sampleUrl: filename,
+                    sampleFormat: file.type,
+                    sampleFolder: filepath,
+                    fileSize: file.size,
+                    userId: locals.user!.id,
+                    peaks: peaks,
+                    typeId: sampleType === 'none' ? null : sampleType,
+                    status: 'pending'
+                }).returning({ id: samples.id });
 
-                    if (validIds.length > 0) {
-                        await tx.insert(collectionSamples).values(validIds.map((collectionId) => ({
-                            collectionId, sampleId: newSample.id
-                        }))).onConflictDoNothing();
-                    }
+                if (validIds.length > 0) {
+                    await tx.insert(collectionSamples).values(validIds.map((collectionId) => ({
+                        collectionId, sampleId: newSample.id
+                    }))).onConflictDoNothing();
+                }
 
-                    await enqueueAnalysis(newSample.id, tx);
+                await enqueueAnalysis(newSample.id, tx);
             })
         } catch (err) {
             await unlink(filename).catch((unlinkErr) => {
-                    console.error('Failed to clean up orphaned upload', filename, unlinkErr);
+                console.error('Failed to clean up orphaned upload', filename, unlinkErr);
             })
             throw err
         }

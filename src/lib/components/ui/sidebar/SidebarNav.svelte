@@ -2,8 +2,6 @@
 	import SidebarNavItem from './SidebarNavItem.svelte';
 
 	let { recentSamples } = $props();
-
-	$inspect(recentSamples);
 </script>
 
 <div class="flex h-full w-1/6 shrink-0 flex-col gap-2 bg-blue-300 px-4 py-24 text-sm">
