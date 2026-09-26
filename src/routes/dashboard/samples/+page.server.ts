@@ -13,7 +13,9 @@ import { enqueueAnalysis } from "$lib/server/jobs";
 import { reanalyseSamples } from "$lib/server/actions/reanalyseSamples";
 
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, depends }) => {
+    depends('app:analysed')
+
     const sampleList = await db.query.samples.findMany({
         where: eq(samples.userId, locals.user!.id),
         with: {

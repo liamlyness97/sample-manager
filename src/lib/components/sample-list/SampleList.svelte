@@ -4,7 +4,7 @@
 	import { player, type Sample } from '$lib/stores/player.svelte';
 	import EditCollectionsModal from '../collections/EditCollectionsModal.svelte';
 	import RenameSamplesModal from './RenameSamplesModal.svelte';
-	import { invalidateAll } from '$app/navigation';
+	import { invalidate, invalidateAll } from '$app/navigation';
 	import { enhance } from '$app/forms';
 	import { fly } from 'svelte/transition';
 
@@ -56,6 +56,20 @@
 		player.setQueue(samples);
 	});
 
+	// Invalidate load when processing or pending
+
+	const STATUS_CHECK = ['pending', 'processing'];
+
+	let isProcessing = $derived(samples.some((sample) => STATUS_CHECK.includes(sample.status)));
+
+	$effect(() => {
+		if (!isProcessing) return;
+
+		const invalidateSamples = setInterval(() => invalidate('app:analysed'), 2000);
+
+		return () => clearInterval(invalidateSamples);
+	});
+
 	function confirmDelete() {
 		if (selectedSamples.length === 0 || deleting) return;
 		const label =
@@ -102,7 +116,7 @@
 			<p>Key</p>
 		</div>
 		<div class="flex justify-center">
-			<p>Type</p>
+			<p>Status</p>
 		</div>
 	</div>
 

@@ -10,6 +10,7 @@ export type Sample = {
 	sampleRate?: number | null;
 	estimatedKey?: string | null;
 	typeId?: string | null;
+	status: 'pending' | 'processing' | 'failed' | 'complete'
 };
 
 type PlayerState = {

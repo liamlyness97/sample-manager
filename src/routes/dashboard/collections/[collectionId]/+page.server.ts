@@ -8,7 +8,8 @@ import { error, fail } from "@sveltejs/kit";
 import { collections } from "$lib/server/db/schema/collections";
 import { reanalyseSamples } from "$lib/server/actions/reanalyseSamples";
 
-export const load: PageServerLoad = async ({params, locals}) => {
+export const load: PageServerLoad = async ({params, locals, depends}) => {
+	depends('app:analysed')
     if (!locals.user) error(401, 'Not signed in');
 
 	const [collection] = await db

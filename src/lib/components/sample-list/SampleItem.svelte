@@ -79,6 +79,6 @@
 		<p class="text-center text-sm text-white/70">{sample.estimatedKey ?? '—'}</p>
 	</div>
 	<div>
-		<p class="truncate text-center text-sm text-white/70">{typeName}</p>
+		<p class="truncate text-center text-sm text-white/70 capitalize">{sample.status}</p>
 	</div>
 </div>
